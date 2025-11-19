@@ -1,0 +1,23 @@
+# Niveau 8
+glide, true
+
+name, Le début du fun
+
+start, 50, 30
+
+image, assets/maisons/maisonlonguerouge.png, -50, 260, 700, 400
+image, assets/maisons/maisonlonguerouge.png, 540, 260, 790, 400
+image, assets/maisons/maisonlongueverte.png, 1200, 20, 600, 650
+image, assets/maisons/maisonlongueorange.png, 1685, 230, 600, 450
+image, assets/maisons/maisonlongueverte.png, 2260, 20, 600, 650
+image, assets/maisons/maisonlonguerouge.png, 2720, 260, 700, 400
+image, assets/maisonsmaisonlongueverte.png, 3310, 20, 600, 650
+image, assets/maisons/maisonfinebleue.png, 3770, 20, 350, 650
+image, assets/maisons/maisonlonguerouge.png, 4045, 260, 700, 400
+image, assets/maisons/maisonfinebleue.png, 4630, 20, 350, 650
+image, assets/maisons/maisonfineverte.png, 4820, 20, 450, 650
+fin,1400, 100, 40, 20
+porte, 400, 0, 50, 80, assets/niveau9.txt, 150, 500, assets/images/door.png
+porte, 2100, 0,10, 10, assets/maisons/maison4.txt, 2100, 0, assets/images/door.png
+ground,#99edc3
+sky,#81e1ff

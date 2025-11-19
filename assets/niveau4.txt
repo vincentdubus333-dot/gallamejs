@@ -1,0 +1,14 @@
+# Niveau 4
+name, Niveau 4 : Apprendre a glide
+glide, true
+start, 60, 30
+bloc, 0, 100, 200, 100
+bloc, 150, 200, 200, 100
+bloc, 300, 300, 200, 100
+bloc, 450, 400, 200, 100
+bloc, 600, 500, 200, 100
+fin, 800, 450, 40, 20
+
+ground,#03ac13
+sky,#1fcaff
+npc,400, 0, 45, 64, assets/images/pngmc.jpg, Pour ce niveau, Voyageur, vous allez devoir apprendre à glide. Sautez proche du bloc au dessus de vous et appuyez sur ↓

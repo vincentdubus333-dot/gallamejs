@@ -1,0 +1,16 @@
+# Niveau 7
+name, Niveau 6 : GL HF
+glide, true
+start, 150, 30
+bloc, 200, 100, 200, 20
+bloc, 200, 200, 200, 20
+bloc, 200, 300, 200, 20
+bloc, 400, 450, 200, 20
+bloc, 600, 450, 20, 400
+bloc, 750, 450, 20, 400
+bloc, 750, 850, 200, 20
+bloc, 950, 670, 20, 200
+fin, 1150, 650, 40, 20
+
+ground,#5dbb63
+sky,#68dbff

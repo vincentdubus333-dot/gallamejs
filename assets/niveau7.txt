@@ -1,0 +1,26 @@
+# Niveau 7
+glide, true
+
+name, Quentin's nightmare
+
+start, 50, 30
+bloc, 100, 100, 20, 200
+bloc, 250, 200, 20, 100
+bloc, 250, 300, 200, 20
+bloc, 430, 400, 20, 20
+bloc, 430, 500, 20, 20
+bloc, 430, 600, 20, 20
+bloc, 430, 700, 20, 20
+bloc, 430, 850, 200, 20
+bloc, 630, 850, 20, 200
+bloc, 630, 1050, 300, 20
+bloc, 920, 600, 20, 470, deadly
+bloc, 1000, 450, 200, 20
+bloc, 1200, 470, 100, 20, deadly
+bloc, 1300, 450, 200, 20
+bloc, 1100, 550, 20, 100
+
+fin,1400, 500, 40, 20
+
+ground,#99edc3
+sky,#81e1ff

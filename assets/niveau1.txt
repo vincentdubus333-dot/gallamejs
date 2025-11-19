@@ -1,0 +1,23 @@
+# Niveau 1
+glide, true
+name, Niveau 1 : Bonjour Voyageur
+start, 60, 30
+bloc, 250, 100, 100, 20
+bloc, 400, 200, 100, 20
+bloc, 550, 300, 100, 20
+bloc, 700, 400, 100, 20
+fin, 720, 450, 40, 20
+ground,#3a5311
+sky,#00a2d4
+image, assets/images/generatedpng.png, 0, 390, 400, 300
+image, assets/images/maisonmaléfique.png, 1500, 390, 400, 300
+porte, 1590, 10, 40, 65, assets/niveaugemini.txt, 150, 0, assets/images/porte.png
+mob_walker, 1000, 100, 2
+bloc, 900, 0, 500, 20
+bloc, 925, 20, 400, 20
+bloc, 950, 40, 350, 20
+bloc, 975, 60, 300, 20
+bloc, 1000,80, 240, 20
+bloc, 1050, 100, 100, 40
+bloc, 1030, 100, 20, 20
+npc,400, 0, 45, 64, assets/images/Villageois.png, Attention Voyageur ! Il y a un monstre plus loin !

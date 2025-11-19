@@ -1,0 +1,32 @@
+# Maison 4
+glide, true
+
+name, intérieur de maison
+bloc, 1750, 0, 20, 600
+bloc, 2800,0, 20, 600
+bloc, 2570,100, 40, 10
+bloc, 2530,110, 40, 10
+bloc, 2490,120, 40, 10
+bloc, 2450,130, 40, 10
+bloc, 2410,140, 40, 10
+bloc, 2370,150, 40, 10
+bloc, 2330,160, 40, 10
+bloc, 2290,170, 40, 10
+bloc, 2250,180, 40, 10
+bloc, 2210,190, 40, 10
+bloc, 2180,200, 40, 10
+bloc, 1750,210, 420, 20
+
+
+
+bloc, 2500,210, 400, 20
+bloc, 1750,380, 900, 20
+
+start, 2685, 230
+image, /fr/gallame/resources/maisons/interieurmaison3.png, 1685, -30, 1200,700
+fin,1400, 0, 40, 20
+porte, 400, 0, 50, 80, /fr/gallame/resources/niveau9.txt, 150, 500, /fr/gallame/resources/images/door.png
+porte, 2250, 400, 50, 80, /fr/gallame/resources/niveaugemini.txt, 150, 500, /fr/gallame/resources/images/door.png
+
+ground,#99edc3
+sky,#000000

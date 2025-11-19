@@ -1,0 +1,14 @@
+# Niveau 8
+glide, true
+
+name, Maison3
+
+start, 50, 30
+
+image, /fr/gallame/resources/maisonlonguerouge.png, -50, 260, 700, 400
+
+fin,1400, 0, 40, 20
+porte, 400, 0, 50, 80, /fr/gallame/resources/niveau9.txt, 150, 500, /fr/gallame/resources/images/door.png
+porte, 400, 0, 50, 80, /fr/gallame/resources/niveaugemini.txt, 150, 500, /fr/gallame/resources/images/door.png
+ground,#99edc3
+sky,#81e1ff

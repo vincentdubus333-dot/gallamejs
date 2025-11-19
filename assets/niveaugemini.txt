@@ -1,0 +1,72 @@
+# Niveau Hardcore
+name, The Tower of Pain
+start, 50, 0
+sky, #0d0d1a
+ground, #222222
+glide, true
+
+# --- SECTION 1 : L'ÉCHAUFFEMENT ---
+# Juste pour se mettre en jambes
+bloc, 200, 0, 50, 50
+bloc, 350, 80, 50, 20
+bloc, 500, 160, 50, 20
+npc, 100, 0, 40, 60, assets/images/Villageois.png, Bonne chance. Tu en auras besoin.
+
+# --- SECTION 2 : LE SOL EST MORTEL ---
+# À partir d'ici, toucher le sol (y=0) tue ou presque, on met des pics au sol
+bloc, 400, -10, 1500, 20, DEADLY
+
+# Les ilots de survie (petits et espacés)
+bloc, 650, 150, 40, 20
+bloc, 800, 120, 40, 20
+bloc, 930, 140, 60, 20
+mob_walker, 800, 140, 1.0
+
+bloc, 1050, 200, 30, 20
+bloc, 1250, 250, 30, 20
+# Un piège aérien
+bloc, 1150, 350, 20, 20, DEADLY
+bloc, 980, 270, 10, 20
+bloc, 1080, 320, 20, 20
+bloc, 1400, 120, 20, 20
+bloc, 1450, 200, 100, 20
+npc, 1480, 220, 40, 60, assets/images/Villageois.png, Respire un coup. Ça monte.
+
+
+# --- SECTION 3 : L'ASCENSION ---
+# Une tour étroite
+bloc, 1600, 0, 100, 200
+bloc, 1600, 300, 100, 500
+bloc, 1900, 0, 100, 800
+
+# Les marches intérieures (Zig Zag)
+bloc, 1700, 300, 60, 20
+bloc, 1840, 420, 60, 20
+bloc, 1700, 540, 40, 20
+bloc, 1840, 660, 40, 20
+# Piège sur le mur
+bloc, 1700, 620, 20, 20, DEADLY
+
+# Le toit de la tour (Y ~ 800)
+bloc, 1600, 800, 250, 20
+bloc, 1890, 800, 110, 20
+
+# --- SECTION 4 : LE SAUT DE LA FOI ---
+# Il faut planer vers la droite, très loin
+npc, 1800, 820, 40, 60, assets/images/Villageois.png, Saute vers l'inconnu...
+
+# Obstacles flottants mortels pour forcer à planer proprement
+bloc, 2200, 600, 50, 50, DEADLY
+bloc, 2400, 400, 50, 50, DEADLY
+bloc, 2600, 200, 50, 50, DEADLY
+
+# La zone d'atterrissage (Loin et bas)
+bloc, 2900, 100, 200, 20
+mob_walker, 2950, 120, 2
+
+# Le petit saut final vicieux
+bloc, 3200, 150, 20, 20
+bloc, 3300, 150, 20, 20, DEADLY
+bloc, 3400, 150, 20, 20
+
+fin, 3500, 150, 50, 50

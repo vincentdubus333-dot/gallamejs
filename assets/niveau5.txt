@@ -1,0 +1,15 @@
+# Niveau 6
+name, Niveau 5 : Patti est passé par là
+glide, true
+start, 0, 30
+bloc, 100, 40, 20, 500
+bloc, 250, 0, 20, 400
+
+bloc, 200, 550, 200, 20
+bloc, 300, 700, 200, 20
+bloc, 250, 400, 20, 20, deadly
+
+fin, 550, 850, 40, 20
+
+ground,#3cb043
+sky,#37d0ff

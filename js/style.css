@@ -1,0 +1,29 @@
+/* style.css */
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    
+    /* Centre le canvas au milieu de l'écran */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Fond gris foncé pour faire ressortir le jeu */
+    background-color: #222;
+    
+    /* Empêche les barres de défilement si le jeu est un peu grand */
+    overflow: hidden;
+}
+
+canvas {
+    /* Un petit fond bleu en attendant que le renderer se lance */
+    background-color: #87CEEB; 
+    
+    /* Une petite ombre pour le style */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    
+    /* Rend les pixels nets (pixel art) si on scale */
+    image-rendering: pixelated; 
+}

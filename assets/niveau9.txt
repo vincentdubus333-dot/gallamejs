@@ -1,0 +1,10 @@
+# Niveau 9
+glide, true
+
+name, Le début du fun
+
+start, 50, 30
+fin,1400, 0, 40, 20
+
+ground,#99edc3
+sky,#81e1ff
