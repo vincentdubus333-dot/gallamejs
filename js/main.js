@@ -147,7 +147,7 @@ function update(dt) {
 
 // --- VÉRIFICATION VICTOIRE ---
 function checkVictory() {
-    if (!currentLevel || !player) return;
+    if (!currentLevel || !player || gameState.isGameWon) return; // ✅ Ajout de la vérification
 
     for (const zone of currentLevel.endZones) {
         if (player.x < zone.rect.x + zone.rect.width &&
