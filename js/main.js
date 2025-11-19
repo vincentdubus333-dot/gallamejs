@@ -129,8 +129,12 @@ function update(dt) {
             loadLevel(currentLevelIndex);
         }
         
-        // ⚠️ On met à jour APRÈS le traitement
         gameState.enterWasPressed = enterIsDown;
+        return;
+    }
+
+    // ✅ AJOUT : Ne pas jouer pendant le chargement
+    if (gameState.isLoading) {
         return;
     }
 
