@@ -165,8 +165,8 @@ export class Player {
     }
 
     handleJump(input, blocks) {
-        // Saut normal : si on est au sol (sol ou sur un bloc) et qu'on n'a pas encore sauté
-        if (input.up && this.onGround && !this.jumping) {
+        // Saut normal : si on est au sol OU si on tombe sans avoir sauté (!jumping)
+        if (input.up && (this.onGround || !this.jumping)) {
             this.vy = GameConfig.JUMP_VELOCITY;
             this.jumping = true;
         }
@@ -174,7 +174,7 @@ export class Player {
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
-
+        
         // Gestion du glide : MAINTENIR DOWN pour rester accroché
         if (input.down) {
             if (!this.gliding) {
@@ -194,13 +194,13 @@ export class Player {
     tryGrabCeiling(blocks) {
         for (const block of blocks) {
             // Vérifier si le joueur est horizontalement aligné avec le bloc
-            if (this.x + GameConfig.PLAYER_SIZE > block.x &&
+            if (this.x + GameConfig.PLAYER_SIZE > block.x && 
                 this.x < block.x + block.width) {
-
+                
                 // Vérifier si le bloc est au-dessus ET à moins de 50 pixels
-                if (block.y + block.height <= this.y &&
+                if (block.y + block.height <= this.y && 
                     this.y - (block.y + block.height) <= 50) {
-
+                    
                     // Pas d'accroche sur DEADLY ou FINISH
                     if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
                         this.gliding = true;
