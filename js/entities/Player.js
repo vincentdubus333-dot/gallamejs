@@ -163,25 +163,25 @@ export class Player {
             }
         }
     }
-handleJump(input, blocks) {
-        // Saut normal : au sol OU air jump disponible
+
+    handleJump(input, blocks) {
+        // Saut normal : si pas encore en train de sauter ET (au sol OU air jump disponible)
         if (input.up && !this.jumping) {
-            if (this.onGround || this.canAirJump) {
-                this.vy = GameConfig.JUMP_VELOCITY;
-                this.jumping = true;
-                
-                // Si on utilise le air jump, on le consomme
-                if (!this.onGround) {
-                    this.canAirJump = false;
-                    console.log("Air jump utilisé !");
-                }
+            // On peut sauter si on est au sol OU si on a le air jump
+            this.vy = GameConfig.JUMP_VELOCITY;
+            this.jumping = true;
+
+            // Si on n'est pas au sol, c'est qu'on utilise le air jump
+            if (!this.onGround && this.canAirJump) {
+                this.canAirJump = false;
+                console.log("Air jump utilisé !");
             }
         }
         // Wall jump
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
-        
+
         // Gestion du glide : MAINTENIR DOWN pour rester accroché
         if (input.down) {
             if (!this.gliding) {
@@ -201,13 +201,13 @@ handleJump(input, blocks) {
     tryGrabCeiling(blocks) {
         for (const block of blocks) {
             // Vérifier si le joueur est horizontalement aligné avec le bloc
-            if (this.x + GameConfig.PLAYER_SIZE > block.x && 
+            if (this.x + GameConfig.PLAYER_SIZE > block.x &&
                 this.x < block.x + block.width) {
-                
+
                 // Vérifier si le bloc est au-dessus ET à moins de 50 pixels
-                if (block.y + block.height <= this.y && 
+                if (block.y + block.height <= this.y &&
                     this.y - (block.y + block.height) <= 50) {
-                    
+
                     // Pas d'accroche sur DEADLY ou FINISH
                     if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
                         this.gliding = true;
