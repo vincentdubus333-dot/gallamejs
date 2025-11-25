@@ -4,24 +4,24 @@ sky, #000000
 
 # Tour gauche
 bloc, 310, 0, 80, 110, deadly
-bloc_colored, 300, 110, 100, 20, #fff
+bloc_colored, 300, 110, 100, 20, #ffffff
 bloc, 310, 130, 80, 110, deadly
-bloc_colored, 300, 240, 100, 20, #fff
+bloc_colored, 300, 240, 100, 20, #ffffff
 bloc, 310, 260, 80, 110, deadly
-bloc_colored, 300, 370, 100, 20, #fff
+bloc_colored, 300, 370, 100, 20, #ffffff
 
-bloc_colored, 150, 150, 20, 350, #fff
+bloc_colored, 150, 150, 20, 350, #ffffff
 
 
-bloc_colored, 500, 370, 100, 20, #fff
+bloc_colored, 500, 370, 100, 20, #ffffff
 
-bloc_colored, 700, 370, 20, 20, #fff
-bloc_colored, 800, 370, 20, 20, #fff
+bloc_colored, 700, 370, 20, 20, #ffffff
+bloc_colored, 800, 370, 20, 20, #ffffff
 
 bloc, 390,0, 700, 10, deadly
 bloc, 900, 500, 200, 20, deadly
 
-bloc_colored, 900, 10, 20, 380, #fff
+bloc_colored, 900, 10, 20, 380, #ffffff
 
 # En haut
 fin, 1300, 20, 50, 50
