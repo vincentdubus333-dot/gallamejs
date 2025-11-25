@@ -118,7 +118,7 @@ function gameLoop(timestamp) {
 }
 
 // --- MISE À JOUR LOGIQUE ---
-// --- MISE À JOUR LOGIQUE ---
+
 function update(dt) {
     if (gameState.isGameWon) {
         const enterIsDown = input.isDown('Enter');

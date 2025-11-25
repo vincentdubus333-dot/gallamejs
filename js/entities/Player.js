@@ -165,33 +165,57 @@ export class Player {
     }
 
     handleJump(input, blocks) {
-        // Saut normal (sol)
-        if (input.up && !this.jumping && this.vy === 0) {
+        // Saut normal : au sol OU pendant le coyote time
+        const canJump = (this.vy === 0) || (this.coyoteTimeFrames > 0);
+        
+        if (input.up && !this.jumping && canJump) {
             this.vy = GameConfig.JUMP_VELOCITY;
             this.jumping = true;
+            this.coyoteTimeFrames = 0; // Consomme le coyote time
         }
         
-        // Wall jump
+        // Wall jump (exactement comme Java)
         if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
         
-        // Gestion du glide avec DOWN
+        // Gestion du glide : MAINTENIR DOWN pour rester accroché
         if (input.down) {
+            if (!this.gliding) {
+                // Essayer de s'accrocher si pas déjà accroché
+                this.tryGrabCeiling(blocks);
+            }
+        } else {
+            // Si on relâche DOWN, on lâche le plafond
             if (this.gliding) {
-                // Si déjà accroché, on lâche
                 this.gliding = false;
                 this.glidingBlock = null;
-            } else {
-                // Sinon on essaie de s'accrocher
-                const ceilingBlock = this.detectCeiling(blocks);
-                if (ceilingBlock) {
-                    console.log("Accroche au plafond !", ceilingBlock);
-                    this.gliding = true;
-                    this.glidingBlock = ceilingBlock;
-                    this.y = ceilingBlock.y + ceilingBlock.height;
-                    this.vy = 0;
-                    this.jumping = false;
+            }
+        }
+    }
+
+    // Détection du bloc au-dessus (logique Java exacte)
+    tryGrabCeiling(blocks) {
+        for (const block of blocks) {
+            // Vérifier si le joueur est horizontalement aligné avec le bloc
+            if (this.x + GameConfig.PLAYER_SIZE > block.x && 
+                this.x < block.x + block.width) {
+                
+                // Vérifier si le bloc est au-dessus ET à moins de 50 pixels
+                if (block.y + block.height <= this.y && 
+                    this.y - (block.y + block.height) <= 50) {
+                    
+                    // Pas d'accroche sur DEADLY ou FINISH
+                    if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
+                        this.gliding = true;
+                        this.glidingBlock = block;
+                        this.y = block.y + block.height;
+                        this.vy = 0;
+                        this.jumping = false;
+                        this.coyoteTimeFrames = 0;
+                        console.log("Accroche au plafond réussie !");
+                        break;
+                    }
                 }
             }
         }
