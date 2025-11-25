@@ -13,28 +13,23 @@ export class Player {
         this.vy = 0;
 
         // États de base
-        this.onGround = false;     // <--- CORRECTION : Variable essentielle pour le saut
-        this.hasGlideJump = false; // <--- CORRECTION : Initialisation
-        this.jumping = false;      
+        this.jumping = false;      // Correspond à "jumping" en Java
         this.facingRight = true;
 
-        // Wall riding
+        // Wall riding (Java: wallRiding, wallRideLeft)
         this.wallRiding = false;
-        this.wallRideLeft = false; 
+        this.wallRideLeft = false; // true = mur à gauche, false = mur à droite
 
-        // Gliding
+        // Gliding (plafond/araignée)
         this.gliding = false;
         this.glidingBlock = null;
 
-        // Mouvement forcé
+        // Mouvement forcé (wall jump)
         this.forcedHorizontalVelocity = 0;
         this.forcedMovementFrames = 0;
     }
 
     update(input, level) {
-        // <--- CORRECTION : On part du principe qu'on est en l'air au début de chaque frame
-        this.onGround = false; 
-
         const blocks = level.blocks;
         const groundY = GameConfig.GROUND_Y;
 
@@ -67,19 +62,18 @@ export class Player {
             this.y += this.vy;
         }
 
-        // === COLLISION SOL GLOBAL ===
+        // === COLLISION SOL ===
         if (this.y >= groundY - GameConfig.PLAYER_SIZE) {
             this.y = groundY - GameConfig.PLAYER_SIZE;
             this.vy = 0;
             this.jumping = false;
             this.gliding = false;
-            this.onGround = true; // <--- CORRECTION : On touche le sol
         }
 
         // === COLLISIONS BLOCS ===
         this.handleBlockCollisions(blocks);
 
-        // === SAUT ET GLIDE ===
+        // === SAUT ET GLIDE (après collisions pour détecter plafond) ===
         this.handleJump(input, blocks);
     }
 
@@ -105,6 +99,7 @@ export class Player {
                     this.die();
                     return;
                 }
+
                 this.resolveCollision(block);
             }
         }
@@ -118,6 +113,7 @@ export class Player {
     }
 
     resolveCollision(block) {
+        // Calcul des chevauchements (exactement comme Java)
         const overlapLeft = (this.x + GameConfig.PLAYER_SIZE) - block.x;
         const overlapRight = (block.x + block.width) - this.x;
         const overlapTop = (this.y + GameConfig.PLAYER_SIZE) - block.y;
@@ -129,7 +125,7 @@ export class Player {
         );
 
         if (block.type === BlockType.FINISH) {
-            return; 
+            return; // Pas de collision physique
         }
 
         if (minOverlap === overlapTop && this.vy >= 0) {
@@ -138,26 +134,27 @@ export class Player {
             this.vy = 0;
             this.jumping = false;
             this.gliding = false;
-            this.onGround = true; // <--- CORRECTION : On considère qu'on est au sol ici aussi
         }
         else if (minOverlap === overlapBottom && this.vy < 0 && !this.gliding) {
             // Tête contre le bloc
             this.y = block.y + block.height;
             this.vy = 0;
+            // On ne s'accroche PAS automatiquement
         }
         else if (minOverlap === overlapLeft) {
             // Collision côté droit du joueur
             this.x = block.x - GameConfig.PLAYER_SIZE;
-            this.handleWallRide(false);
+            this.handleWallRide(false); // Mur à droite
         }
         else if (minOverlap === overlapRight) {
             // Collision côté gauche du joueur
             this.x = block.x + block.width;
-            this.handleWallRide(true); 
+            this.handleWallRide(true); // Mur à gauche
         }
     }
 
     handleWallRide(onLeftWall) {
+        // Conditions exactes du Java
         if (this.jumping && this.vy > 0 && this.forcedMovementFrames === 0) {
             this.wallRiding = true;
             this.wallRideLeft = onLeftWall;
@@ -168,18 +165,18 @@ export class Player {
     }
 
 handleJump(input, blocks) {
-    // J'ai enlevé "&& !this.jumping" car si onGround est true, c'est qu'on peut sauter.
-    if (input.up && (this.onGround || this.hasGlideJump)) {
-        this.vy = GameConfig.JUMP_VELOCITY;
-        this.jumping = true;
-        this.onGround = false;
-        this.hasGlideJump = false; 
-    }
+        // Saut : possible si on n'a pas encore sauté
+        if (input.up && !this.hasJumped) {
+            this.vy = GameConfig.JUMP_VELOCITY;
+            this.hasJumped = true; // Marque qu'on a utilisé notre saut
+            console.log("Saut utilisé !");
+        }
+        // Wall jump
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
-
-        // Glide
+        
+        // Gestion du glide : MAINTENIR DOWN pour rester accroché
         if (input.down) {
             if (!this.gliding) {
                 this.tryGrabCeiling(blocks);
@@ -188,7 +185,6 @@ handleJump(input, blocks) {
             if (this.gliding) {
                 this.gliding = false;
                 this.glidingBlock = null;
-                this.hasGlideJump = true; 
             }
         }
     }
@@ -206,13 +202,36 @@ handleJump(input, blocks) {
                         this.glidingBlock = block;
                         this.y = block.y + block.height;
                         this.vy = 0;
-                        this.jumping = false; // Reset le saut en s'accrochant
-                        
+                        this.hasJumped = false; // Reset le saut en s'accrochant
+                        console.log("Accroche au plafond réussie !");
                         break;
                     }
                 }
             }
         }
+    }
+
+    // Détection du bloc juste au-dessus de la tête
+    detectCeiling(blocks) {
+        const checkY = this.y - 10; // Zone de détection au-dessus
+        const checkX = this.x + 5;
+        const checkW = this.width - 10;
+        const checkH = 15;
+
+        for (const block of blocks) {
+            // Collision avec la zone de détection
+            if (checkX < block.x + block.width &&
+                checkX + checkW > block.x &&
+                checkY < block.y + block.height &&
+                checkY + checkH > block.y) {
+
+                // Pas d'accroche sur les zones dangereuses ou de fin
+                if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
+                    return block;
+                }
+            }
+        }
+        return null;
     }
 
     applyWallJump(jumpingFromLeft) {
@@ -236,19 +255,21 @@ handleJump(input, blocks) {
         const radiusX = (this.width + 10) / 2;
         const radiusY = (this.height + 10) / 2;
 
+        // 1. Auras visuelles
         if (this.wallRiding) {
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; // Cyan (Wall Slide)
             ctx.beginPath();
             ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
             ctx.fill();
         }
         else if (this.gliding) {
-            ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+            ctx.fillStyle = 'rgba(255, 0, 255, 0.5)'; // Violet (Plafond)
             ctx.beginPath();
             ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
+        // 2. Corps du Joueur
         ctx.fillStyle = GameConfig.COLORS.PLAYER;
         ctx.fillRect(screenX, screenY, this.width, this.height);
 
@@ -256,6 +277,7 @@ handleJump(input, blocks) {
         ctx.lineWidth = 1;
         ctx.strokeRect(screenX, screenY, this.width, this.height);
 
+        // 3. Yeux
         ctx.fillStyle = 'white';
         if (this.facingRight) {
             ctx.fillRect(screenX + 20, screenY + 5, 8, 8);
@@ -275,6 +297,5 @@ handleJump(input, blocks) {
         this.wallRiding = false;
         this.jumping = false;
         this.forcedMovementFrames = 0;
-        this.onGround = false;
     }
 }
