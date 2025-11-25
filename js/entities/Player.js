@@ -11,19 +11,19 @@ export class Player {
         // Physique
         this.vx = 0;
         this.vy = 0;
-        
+
         // États de base
         this.jumping = false;      // Correspond à "jumping" en Java
         this.facingRight = true;
-        
+
         // Wall riding (Java: wallRiding, wallRideLeft)
         this.wallRiding = false;
         this.wallRideLeft = false; // true = mur à gauche, false = mur à droite
-        
+
         // Gliding (plafond/araignée)
         this.gliding = false;
         this.glidingBlock = null;
-        
+
         // Mouvement forcé (wall jump)
         this.forcedHorizontalVelocity = 0;
         this.forcedMovementFrames = 0;
@@ -47,13 +47,13 @@ export class Player {
                 this.facingRight = true;
             }
         }
-        
+
         // Limites du monde
         if (this.x < 0) this.x = 0;
         if (this.x > GameConfig.WORLD_WIDTH - GameConfig.PLAYER_SIZE) {
             this.x = GameConfig.WORLD_WIDTH - GameConfig.PLAYER_SIZE;
         }
-        
+
         // === GRAVITÉ ET GLIDE ===
         if (this.gliding && this.glidingBlock !== null) {
             this.handleGliding();
@@ -61,7 +61,7 @@ export class Player {
             this.vy += GameConfig.GRAVITY;
             this.y += this.vy;
         }
-        
+
         // === COLLISION SOL ===
         if (this.y >= groundY - GameConfig.PLAYER_SIZE) {
             this.y = groundY - GameConfig.PLAYER_SIZE;
@@ -69,17 +69,17 @@ export class Player {
             this.jumping = false;
             this.gliding = false;
         }
-        
+
         // === COLLISIONS BLOCS ===
         this.handleBlockCollisions(blocks);
-        
+
         // === SAUT ET GLIDE (après collisions pour détecter plafond) ===
         this.handleJump(input, blocks);
     }
 
     handleGliding() {
         const block = this.glidingBlock;
-        if (this.x + GameConfig.PLAYER_SIZE > block.x && 
+        if (this.x + GameConfig.PLAYER_SIZE > block.x &&
             this.x < block.x + block.width) {
             this.y = block.y + block.height;
             this.vy = 0;
@@ -92,14 +92,14 @@ export class Player {
 
     handleBlockCollisions(blocks) {
         this.wallRiding = false;
-        
+
         for (const block of blocks) {
             if (this.intersects(block)) {
                 if (block.type === BlockType.DEADLY) {
                     this.die();
                     return;
                 }
-                
+
                 this.resolveCollision(block);
             }
         }
@@ -107,9 +107,9 @@ export class Player {
 
     intersects(block) {
         return this.x < block.x + block.width &&
-               this.x + this.width > block.x &&
-               this.y < block.y + block.height &&
-               this.y + this.height > block.y;
+            this.x + this.width > block.x &&
+            this.y < block.y + block.height &&
+            this.y + this.height > block.y;
     }
 
     resolveCollision(block) {
@@ -118,16 +118,16 @@ export class Player {
         const overlapRight = (block.x + block.width) - this.x;
         const overlapTop = (this.y + GameConfig.PLAYER_SIZE) - block.y;
         const overlapBottom = (block.y + block.height) - this.y;
-        
+
         const minOverlap = Math.min(
-            Math.min(overlapLeft, overlapRight), 
+            Math.min(overlapLeft, overlapRight),
             Math.min(overlapTop, overlapBottom)
         );
-        
+
         if (block.type === BlockType.FINISH) {
             return; // Pas de collision physique
         }
-        
+
         if (minOverlap === overlapTop && this.vy >= 0) {
             // Atterrissage sur le bloc
             this.y = block.y - GameConfig.PLAYER_SIZE;
@@ -165,16 +165,16 @@ export class Player {
     }
 
     handleJump(input, blocks) {
-        // Saut normal : UNIQUEMENT si !jumping (logique Java exacte)
-        if (input.up && !this.jumping) {
+        // Saut normal : si on est au sol (sol ou sur un bloc) et qu'on n'a pas encore sauté
+        if (input.up && this.onGround && !this.jumping) {
             this.vy = GameConfig.JUMP_VELOCITY;
             this.jumping = true;
         }
-        // Wall jump (logique Java exacte)
+        // Wall jump
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
-        
+
         // Gestion du glide : MAINTENIR DOWN pour rester accroché
         if (input.down) {
             if (!this.gliding) {
@@ -194,39 +194,13 @@ export class Player {
     tryGrabCeiling(blocks) {
         for (const block of blocks) {
             // Vérifier si le joueur est horizontalement aligné avec le bloc
-            if (this.x + GameConfig.PLAYER_SIZE > block.x && 
+            if (this.x + GameConfig.PLAYER_SIZE > block.x &&
                 this.x < block.x + block.width) {
-                
-                // Vérifier si le bloc est au-dessus ET à moins de 50 pixels
-                if (block.y + block.height <= this.y && 
-                    this.y - (block.y + block.height) <= 50) {
-                    
-                    // Pas d'accroche sur DEADLY ou FINISH
-                    if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
-                        this.gliding = true;
-                        this.glidingBlock = block;
-                        this.y = block.y + block.height;
-                        this.vy = 0;
-                        this.jumping = false;
-                        console.log("Accroche au plafond réussie !");
-                        break;
-                    }
-                }
-            }
-        }
-    }
 
-    // Détection du bloc au-dessus (logique Java exacte)
-    tryGrabCeiling(blocks) {
-        for (const block of blocks) {
-            // Vérifier si le joueur est horizontalement aligné avec le bloc
-            if (this.x + GameConfig.PLAYER_SIZE > block.x && 
-                this.x < block.x + block.width) {
-                
                 // Vérifier si le bloc est au-dessus ET à moins de 50 pixels
-                if (block.y + block.height <= this.y && 
+                if (block.y + block.height <= this.y &&
                     this.y - (block.y + block.height) <= 50) {
-                    
+
                     // Pas d'accroche sur DEADLY ou FINISH
                     if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
                         this.gliding = true;
@@ -234,7 +208,6 @@ export class Player {
                         this.y = block.y + block.height;
                         this.vy = 0;
                         this.jumping = false;
-                        this.coyoteTimeFrames = 0;
                         console.log("Accroche au plafond réussie !");
                         break;
                     }
@@ -256,7 +229,7 @@ export class Player {
                 checkX + checkW > block.x &&
                 checkY < block.y + block.height &&
                 checkY + checkH > block.y) {
-                
+
                 // Pas d'accroche sur les zones dangereuses ou de fin
                 if (block.type !== BlockType.FINISH && block.type !== BlockType.DEADLY) {
                     return block;
@@ -281,7 +254,7 @@ export class Player {
     draw(ctx, camX, camY) {
         const screenX = Math.round(this.x - camX);
         const screenY = Math.round(this.y - camY);
-        
+
         const centerX = screenX + this.width / 2;
         const centerY = screenY + this.height / 2;
         const radiusX = (this.width + 10) / 2;
@@ -304,7 +277,7 @@ export class Player {
         // 2. Corps du Joueur
         ctx.fillStyle = GameConfig.COLORS.PLAYER;
         ctx.fillRect(screenX, screenY, this.width, this.height);
-        
+
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1;
         ctx.strokeRect(screenX, screenY, this.width, this.height);
@@ -320,9 +293,9 @@ export class Player {
 
     die() {
         console.log("Mort !");
-        this.x = 50; 
-        this.y = 0; 
-        this.vx = 0; 
+        this.x = 50;
+        this.y = 0;
+        this.vx = 0;
         this.vy = 0;
         this.gliding = false;
         this.glidingBlock = null;
