@@ -112,38 +112,47 @@ async function loadLevel(index) {
 async function loadLevelFromDoor(door) {
     if (gameState.isLoading) return;
     
-    console.log(`🚪 Passage par la porte vers: ${door.targetLevelFile}`);
-    
+    console.log(`🚪 Tentative d'ouverture de porte vers : ${door.targetLevelFile}`);
+    console.log(`📍 Cible demandée : X=${door.targetX}, Y=${door.targetY}`);
+
     gameState.isLoading = true;
     gameState.isGameWon = false;
     gameState.eKeyWasPressed = false;
 
     try {
-        // Charger le nouveau niveau
-        currentLevel = await loader.load(door.targetLevelFile);
+        // 1. Tenter de charger le niveau
+        const nextLevel = await loader.load(door.targetLevelFile);
 
-        if (!currentLevel) {
-            throw new Error("Niveau introuvable");
+        if (!nextLevel) {
+            throw new Error(`Le fichier "${door.targetLevelFile}" est introuvable ou vide.`);
         }
 
-        // Calculer la position Y absolue du joueur
-        // Si targetY est null, on utilise la position de départ du niveau
+        // 2. Si le chargement réussit, on remplace le niveau actuel
+        currentLevel = nextLevel;
+
+        // 3. Calcul de la nouvelle position du joueur
         let newX, newY;
-        
-        if (door.targetX !== null && door.targetY !== null) {
+
+        // Vérification stricte que les coordonnées sont des nombres valides (pas null, pas NaN)
+        if (door.targetX !== null && !isNaN(door.targetX) && 
+            door.targetY !== null && !isNaN(door.targetY)) {
+            
             newX = door.targetX;
-            // targetY est la distance depuis le sol
+            // Conversion : targetY est la hauteur depuis le sol
             newY = GameConfig.GROUND_Y - door.targetY - GameConfig.PLAYER_SIZE;
+            console.log(`✅ Spawn porte utilisé : (${newX}, ${newY})`);
         } else {
-            // Sinon, position de départ du niveau
+            // Repli sur le point de départ du niveau (start)
             newX = currentLevel.startX;
             newY = currentLevel.startY;
+            console.log(`⚠️ Pas de coordonnées porte valides, utilisation du Start niveau : (${newX}, ${newY})`);
         }
 
-        // Créer un nouveau joueur à cette position
+        // 4. Création du joueur et reset caméra
         player = new Player(newX, newY);
+        player.vx = 0; // On s'assure qu'il ne glisse pas en arrivant
+        player.vy = 0;
 
-        // Réinitialiser la caméra
         camera.x = player.x - (GameConfig.WINDOW_WIDTH / 2);
         camera.y = player.y - (GameConfig.WINDOW_HEIGHT / 2);
         camera.targetX = camera.x;
@@ -151,13 +160,13 @@ async function loadLevelFromDoor(door) {
 
         gameState.currentTime = 0;
 
-        console.log(`✅ Joueur téléporté à: (${newX}, ${newY})`);
-
     } catch (e) {
-        alert(`Erreur lors du passage de la porte : ` + e.message);
-        console.error(e);
+        alert(`Impossible d'entrer : ${e.message}`);
+        console.error("Erreur porte:", e);
     } finally {
         gameState.isLoading = false;
+        // Petit délai pour éviter de réactiver une porte immédiatement en arrivant
+        setTimeout(() => { gameState.eKeyWasPressed = false; }, 500);
     }
 }
 

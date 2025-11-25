@@ -9,8 +9,8 @@ bloc, 700, 400, 100, 20
 fin, 720, 450, 40, 20
 ground,#3a5311
 sky,#00a2d4
-image, assets/images/generatedpng.png, 0, 390, 400, 300
-image, assets/images/maisonmaléfique.png, 1500, 390, 400, 300
+image, assets/images/generatedpng.png, 0, 0, 400, 300
+image, assets/images/maisonmaléfique.png, 1500, 0, 400, 300
 porte, 1590, 10, 40, 65, assets/niveaugemini.txt, 150, 0, assets/images/porte.png
 porte, 1790, 10, 40, 65, assets/niveau10.txt, 150, 0, assets/images/porte.png
 mob_walker, 1000, 100, 2
