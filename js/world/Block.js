@@ -1,6 +1,6 @@
-// js/world/Block.js
+import { GameConfig } from '../GameConfig.js';
 
-// L'équivalent de ton Enum Java
+// Définition des types de blocs
 export const BlockType = {
     NORMAL: 'NORMAL',
     DEADLY: 'DEADLY',
@@ -48,11 +48,11 @@ export class Block {
         const screenY = Math.round(this.y - camY);
 
         // 2. Optimisation (Culling) : Ne rien dessiner si hors de l'écran
-        // On ajoute une petite marge de sécurité de 100px
-        //if (screenX < -this.width - 100 || screenX > ctx.canvas.width + 100 ||
-        //    screenY < -this.height - 100 || screenY > ctx.canvas.height + 100) {
-        //    return;
-        //}
+        // On ajoute une marge de sécurité
+        if (screenX + this.width < -100 || screenX > GameConfig.CANVAS_WIDTH + 100 ||
+            screenY + this.height < -100 || screenY > GameConfig.CANVAS_HEIGHT + 100) {
+            return;
+        }
 
         // 3. Choix du rendu selon la priorité
 
@@ -69,6 +69,7 @@ export class Block {
         }
 
         // CAS B : Couleur personnalisée
+        // C'est ici que tes blocs blancs (#ffffff) vont être gérés
         if (this.type === BlockType.COLORED && this.customColor) {
             this.drawColoredBlock(ctx, screenX, screenY, this.customColor);
             return;
@@ -89,7 +90,7 @@ export class Block {
         }
     }
 
-    // --- Styles de Secours (Fallbacks) inspirés de ton code Java ---
+    // --- Styles de Secours (Fallbacks) ---
 
     drawBrick(ctx, x, y) {
         // Fond Marron
@@ -125,7 +126,7 @@ export class Block {
         ctx.fillStyle = color;
         ctx.fillRect(x, y, this.width, this.height);
         
-        // Bordure noire
+        // Bordure noire semi-transparente pour bien délimiter le bloc blanc sur fond clair
         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, this.width, this.height);
@@ -142,10 +143,12 @@ export class Block {
         ctx.lineWidth = 1;
 
         const spikesCount = Math.floor(this.width / 10); // Un pic tous les 10px
-        const spikeW = this.width / spikesCount;
+        // Sécurité anti-division par zéro
+        const count = spikesCount > 0 ? spikesCount : 1; 
+        const spikeW = this.width / count;
 
         ctx.beginPath();
-        for (let i = 0; i < spikesCount; i++) {
+        for (let i = 0; i < count; i++) {
             const bx = x + (i * spikeW);
             // Triangle
             ctx.moveTo(bx, y + this.height); // Bas gauche
