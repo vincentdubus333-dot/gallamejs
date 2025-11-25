@@ -1,0 +1,45 @@
+name, Test
+start, 0, 50
+sky, #000000
+
+# Tour gauche
+bloc_colored, 30, 100, 20, 900, #fff
+bloc_colored, 100, 100, 20, 800, #fff
+
+
+bloc_colored, 100, 900, 100, 20, #fff
+bloc, 200, 900, 120, 10, deadly
+
+bloc_colored, 300, 700, 20, 200, #fff
+bloc, 320, 700, 170, 10, deadly
+bloc_colored, 470, 500, 20, 200, #fff
+bloc, 490, 500, 150, 10, deadly
+bloc_colored, 640, 500, 200, 20, #fff
+
+mob_walker, 950, 400, 0.01
+mob_walker, 1100, 400, 0.01
+mob_walker, 1230, 400, 0.01
+mob_walker, 1350, 400, 0.01
+bloc_colored, 1450, 500, 20, 20, #fff
+mob_walker, 1550, 400, 4
+mob_walker, 1700, 400, 4
+
+bloc_colored, 1800, 500, 200, 20, #fff
+
+bloc, 840, 400, 1000, 10, deadly
+
+bloc_colored, 2000, 700, 300, 20, #fff
+bloc, 2000, 720, 300, 20, deadly
+
+bloc_colored, 2400, 450, 20, 200, #fff
+bloc, 2380, 650, 40, 20, deadly
+bloc, 2380, 450, 20, 200, deadly
+
+bloc_colored, 2600, 400, 200, 20, #fff
+bloc_colored, 2800, 600, 200, 20, #fff
+bloc, 2800, 620, 200, 20, deadly
+
+
+
+# En haut
+fin, 3000, 650, 50, 50
