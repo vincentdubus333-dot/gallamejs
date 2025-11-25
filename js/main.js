@@ -25,7 +25,8 @@ const LEVELS = [
     'assets/niveau6.txt',
     'assets/niveau7.txt',
     'assets/niveau8.txt',
-    'assets/niveaugemini.txt'
+    'assets/niveaugemini.txt',
+    'assets/niveau10.txt'
 ];
 
 // --- ÉTAT DU JEU ---
