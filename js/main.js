@@ -225,15 +225,20 @@ function updateMobs(dt) {
             const canAggro = (mob === nearestMob);
             
             // GESTION DE COMPATIBILITÉ :
-            // MobZombie attend (dt, player, level)
-            // Walker attend (dt, blocks)
-            // On regarde le nombre d'arguments attendus par la fonction update
+            // Problème : Walker a évolué (plus d'arguments), donc .length >= 3 le confond avec MobZombie.
             
-            if (mob.update.length >= 3) {
-                // Signature MobZombie
+            // 1. On vérifie explicitement si c'est un Walker
+            if (mob instanceof Walker) {
+                // Signature Walker : a besoin de 'blocks' en 2ème argument
+                mob.update(dt, currentLevel.blocks, player, canAggro);
+            } 
+            // 2. Sinon, si c'est un MobZombie ou autre mob "moderne" (signature à 3 args)
+            else if (mob.update.length >= 3) {
+                // Signature MobZombie : (dt, player, level)
                 mob.update(dt, player, currentLevel);
-            } else {
-                // Signature Walker (ignore les arguments en trop en JS, donc safe)
+            } 
+            // 3. Fallback
+            else {
                 mob.update(dt, currentLevel.blocks, player, canAggro);
             }
         }
