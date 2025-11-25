@@ -3,6 +3,10 @@ import { BlockType } from '../world/Block.js';
 
 export class Player {
     constructor(x, y) {
+        // Sauvegarde de la position de départ pour le respawn
+        this.startX = x;
+        this.startY = y;
+
         this.x = x;
         this.y = y;
         this.width = GameConfig.PLAYER_SIZE;
@@ -13,32 +17,36 @@ export class Player {
         this.vy = 0;
 
         // États de base
-        this.onGround = false;     // <--- CORRECTION : Variable essentielle pour le saut
-        this.hasGlideJump = false; // <--- CORRECTION : Initialisation
         this.jumping = false;
         this.facingRight = true;
+        this.onGround = false;
 
         // Wall riding
         this.wallRiding = false;
         this.wallRideLeft = false;
 
-        // Gliding
+        // Gliding & Coyote Jump (Saut bonus)
         this.gliding = false;
         this.glidingBlock = null;
+        this.hasGlideJump = false; // Autorise un saut juste après avoir quitté le plafond
 
-        // Mouvement forcé
+        // Mouvement forcé (wall jump)
         this.forcedHorizontalVelocity = 0;
         this.forcedMovementFrames = 0;
+        
+        // Signal de mort pour demander le reset du niveau à main.js
+        this.justDied = false;
     }
 
     update(input, level) {
-        // <--- CORRECTION : On part du principe qu'on est en l'air au début de chaque frame
-        this.onGround = false;
-
         const blocks = level.blocks;
+        const mobs = level.mobs || []; // On récupère les mobs du niveau
         const groundY = GameConfig.GROUND_Y;
 
-        // === MOUVEMENTS HORIZONTAUX ===
+        // Reset de l'état "au sol"
+        this.onGround = false; 
+
+        // === 1. MOUVEMENTS HORIZONTAUX ===
         if (this.forcedMovementFrames > 0) {
             this.x += this.forcedHorizontalVelocity;
             this.forcedMovementFrames--;
@@ -53,13 +61,13 @@ export class Player {
             }
         }
 
-        // Limites du monde
+        // Limites du monde (gauche / droite)
         if (this.x < 0) this.x = 0;
         if (this.x > GameConfig.WORLD_WIDTH - GameConfig.PLAYER_SIZE) {
             this.x = GameConfig.WORLD_WIDTH - GameConfig.PLAYER_SIZE;
         }
 
-        // === GRAVITÉ ET GLIDE ===
+        // === 2. GRAVITÉ ET GLIDE ===
         if (this.gliding && this.glidingBlock !== null) {
             this.handleGliding();
         } else {
@@ -67,32 +75,40 @@ export class Player {
             this.y += this.vy;
         }
 
-        // === COLLISION SOL GLOBAL ===
+        // === 3. COLLISION AVEC LE SOL DU MONDE ===
         if (this.y >= groundY - GameConfig.PLAYER_SIZE) {
             this.y = groundY - GameConfig.PLAYER_SIZE;
             this.vy = 0;
             this.jumping = false;
             this.gliding = false;
-            this.onGround = true; // <--- CORRECTION : On touche le sol
+            this.onGround = true;
+            this.hasGlideJump = false; // On est au sol, on n'a plus besoin du saut bonus de glide
         }
 
-        // === COLLISIONS BLOCS ===
+        // === 4. COLLISIONS AVEC LES BLOCS ===
         this.handleBlockCollisions(blocks);
 
-        // === SAUT ET GLIDE ===
+        // === 5. COLLISIONS AVEC LES MOBS (NOUVEAU) ===
+        this.handleMobCollisions(mobs);
+
+        // === 6. SAUT, WALL JUMP ET GLIDE ===
         this.handleJump(input, blocks);
     }
 
     handleGliding() {
         const block = this.glidingBlock;
+        // Vérifie si le joueur est toujours sous le bloc
         if (this.x + GameConfig.PLAYER_SIZE > block.x &&
             this.x < block.x + block.width) {
             this.y = block.y + block.height;
             this.vy = 0;
             this.jumping = false;
         } else {
+            // Le joueur n'est plus sous le bloc (il tombe ou lâche)
             this.gliding = false;
             this.glidingBlock = null;
+            // On lui donne une chance de sauter (Coyote Time)
+            this.hasGlideJump = true; 
         }
     }
 
@@ -110,11 +126,22 @@ export class Player {
         }
     }
 
-    intersects(block) {
-        return this.x < block.x + block.width &&
-            this.x + this.width > block.x &&
-            this.y < block.y + block.height &&
-            this.y + this.height > block.y;
+    handleMobCollisions(mobs) {
+        for (const mob of mobs) {
+            // "intersects" fonctionne avec n'importe quel objet ayant x, y, width, height
+            if (this.intersects(mob)) {
+                // Pour l'instant, toucher un mob = mort instantanée
+                this.die();
+                return;
+            }
+        }
+    }
+
+    intersects(obj) {
+        return this.x < obj.x + obj.width &&
+            this.x + this.width > obj.x &&
+            this.y < obj.y + obj.height &&
+            this.y + this.height > obj.y;
     }
 
     resolveCollision(block) {
@@ -128,20 +155,19 @@ export class Player {
             Math.min(overlapTop, overlapBottom)
         );
 
-        if (block.type === BlockType.FINISH) {
-            return;
-        }
+        if (block.type === BlockType.FINISH) return;
 
         if (minOverlap === overlapTop && this.vy >= 0) {
-            // Atterrissage sur le bloc
+            // Atterrissage sur le dessus
             this.y = block.y - GameConfig.PLAYER_SIZE;
             this.vy = 0;
             this.jumping = false;
             this.gliding = false;
-            this.onGround = true; // <--- CORRECTION : On considère qu'on est au sol ici aussi
+            this.onGround = true; 
+            this.hasGlideJump = false;
         }
         else if (minOverlap === overlapBottom && this.vy < 0 && !this.gliding) {
-            // Tête contre le bloc
+            // Tête contre le bas du bloc
             this.y = block.y + block.height;
             this.vy = 0;
         }
@@ -149,21 +175,22 @@ export class Player {
             // Collision côté droit du joueur
             this.x = block.x - GameConfig.PLAYER_SIZE;
             this.handleWallRide(false);
+            this.hasGlideJump = false; 
         }
         else if (minOverlap === overlapRight) {
             // Collision côté gauche du joueur
             this.x = block.x + block.width;
             this.handleWallRide(true);
+            this.hasGlideJump = false; 
         }
     }
 
     handleWallRide(onLeftWall) {
-        // CORRECTION : On retire "this.jumping" pour permettre le wall ride même en tombant d'une corniche
+        // Wall Slide : s'active si on descend contre un mur
         if (this.vy > 0 && this.forcedMovementFrames === 0) {
             this.wallRiding = true;
             this.wallRideLeft = onLeftWall;
-            
-            // On plafonne la vitesse de chute
+            // Ralentir la chute
             if (this.vy > GameConfig.WALL_SLIDE_SPEED) {
                 this.vy = GameConfig.WALL_SLIDE_SPEED;
             }
@@ -171,26 +198,22 @@ export class Player {
     }
 
     handleJump(input, blocks) {
-        // === SAUTS (Normal & Wall Jump) ===
-        if (input.up) {
-            // Cas 1 : Saut classique (depuis le sol ou via le bonus du Glide)
-            if (this.onGround || this.hasGlideJump) {
-                this.vy = GameConfig.JUMP_VELOCITY;
-                this.jumping = true;
-                this.onGround = false;
-                this.hasGlideJump = false;
-                // Petite astuce : on "détache" légèrement le joueur du sol pour éviter une collision immédiate frame suivante
-                this.y -= 1;
-            }
-            // Cas 2 : Wall Jump (si on ne touche pas le sol mais qu'on est sur un mur)
-            else if (this.wallRiding) {
-                this.applyWallJump(this.wallRideLeft);
-            }
+        // SAUT STANDARD ou SAUT BONUS (Coyote Jump après glide)
+        // Condition : Appui Haut ET (Au sol OU Saut Bonus Disponible)
+        if (input.up && (this.onGround || this.hasGlideJump) && !this.jumping) {
+            this.vy = GameConfig.JUMP_VELOCITY;
+            this.jumping = true;
+            this.onGround = false;
+            this.hasGlideJump = false; // Le bonus est consommé
+        }
+        // WALL JUMP
+        else if (input.up && this.wallRiding) {
+            this.applyWallJump(this.wallRideLeft);
         }
 
-        // === GLIDE (Mécanique de planage) ===
+        // GLIDE (Accrochage plafond)
         if (input.down) {
-            if (!this.gliding && !this.onGround) { // On ne peut pas grab le plafond si on est au sol
+            if (!this.gliding) {
                 this.tryGrabCeiling(blocks);
             }
         } else {
@@ -198,11 +221,7 @@ export class Player {
             if (this.gliding) {
                 this.gliding = false;
                 this.glidingBlock = null;
-                this.hasGlideJump = true; // Redonne un saut
-
-                // Petit "hop" vers le bas pour se détacher visuellement
-                this.y += 1;
-                this.jumping = true; // On repasse en état de saut/chute
+                this.hasGlideJump = true; // On active le saut bonus
             }
         }
     }
@@ -220,8 +239,9 @@ export class Player {
                         this.glidingBlock = block;
                         this.y = block.y + block.height;
                         this.vy = 0;
-                        this.jumping = false; // Reset le saut en s'accrochant
-
+                        this.jumping = false;
+                        this.hasGlideJump = false;
+                        console.log("Gliding!");
                         break;
                     }
                 }
@@ -244,32 +264,35 @@ export class Player {
     draw(ctx, camX, camY) {
         const screenX = Math.round(this.x - camX);
         const screenY = Math.round(this.y - camY);
-
         const centerX = screenX + this.width / 2;
         const centerY = screenY + this.height / 2;
         const radiusX = (this.width + 10) / 2;
         const radiusY = (this.height + 10) / 2;
 
+        // Auras visuelles
         if (this.wallRiding) {
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; // Cyan
             ctx.beginPath();
             ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
             ctx.fill();
         }
         else if (this.gliding) {
-            ctx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+            ctx.fillStyle = 'rgba(255, 0, 255, 0.5)'; // Violet
             ctx.beginPath();
             ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
+        // Corps du joueur
         ctx.fillStyle = GameConfig.COLORS.PLAYER;
         ctx.fillRect(screenX, screenY, this.width, this.height);
-
+        
+        // Contour
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1;
         ctx.strokeRect(screenX, screenY, this.width, this.height);
 
+        // Yeux
         ctx.fillStyle = 'white';
         if (this.facingRight) {
             ctx.fillRect(screenX + 20, screenY + 5, 8, 8);
@@ -280,15 +303,23 @@ export class Player {
 
     die() {
         console.log("Mort !");
-        this.x = 50;
-        this.y = 0;
+        
+        // Reset à la position de départ sauvegardée
+        this.x = this.startX; 
+        this.y = this.startY; 
+        
         this.vx = 0;
         this.vy = 0;
+        
+        // Reset des états
         this.gliding = false;
         this.glidingBlock = null;
+        this.hasGlideJump = false;
         this.wallRiding = false;
         this.jumping = false;
         this.forcedMovementFrames = 0;
-        this.onGround = false;
+
+        // Signal pour main.js : "Reset les mobs !"
+        this.justDied = true; 
     }
 }
