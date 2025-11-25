@@ -1,3 +1,4 @@
+// js/entities/Player.js
 import { GameConfig } from '../GameConfig.js';
 import { BlockType } from '../world/Block.js';
 
@@ -40,7 +41,6 @@ export class Player {
 
     update(input, level) {
         const blocks = level.blocks;
-        const mobs = level.mobs || []; // On récupère les mobs du niveau
         const groundY = GameConfig.GROUND_Y;
 
         // Reset de l'état "au sol"
@@ -88,10 +88,7 @@ export class Player {
         // === 4. COLLISIONS AVEC LES BLOCS ===
         this.handleBlockCollisions(blocks);
 
-        // === 5. COLLISIONS AVEC LES MOBS (NOUVEAU) ===
-        this.handleMobCollisions(mobs);
-
-        // === 6. SAUT, WALL JUMP ET GLIDE ===
+        // === 5. SAUT, WALL JUMP ET GLIDE ===
         this.handleJump(input, blocks);
     }
 
@@ -126,22 +123,11 @@ export class Player {
         }
     }
 
-    handleMobCollisions(mobs) {
-        for (const mob of mobs) {
-            // "intersects" fonctionne avec n'importe quel objet ayant x, y, width, height
-            if (this.intersects(mob)) {
-                // Pour l'instant, toucher un mob = mort instantanée
-                this.die();
-                return;
-            }
-        }
-    }
-
-    intersects(obj) {
-        return this.x < obj.x + obj.width &&
-            this.x + this.width > obj.x &&
-            this.y < obj.y + obj.height &&
-            this.y + this.height > obj.y;
+    intersects(block) {
+        return this.x < block.x + block.width &&
+            this.x + this.width > block.x &&
+            this.y < block.y + block.height &&
+            this.y + this.height > block.y;
     }
 
     resolveCollision(block) {

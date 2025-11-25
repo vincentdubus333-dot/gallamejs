@@ -1,3 +1,4 @@
+// js/main.js
 import { GameConfig } from './GameConfig.js';
 import { LevelLoader } from './level/LevelLoader.js';
 import { Renderer } from './rendering/Renderer.js';
@@ -5,7 +6,6 @@ import { Player } from './entities/Player.js';
 import { InputHandler } from './input/InputHandler.js';
 import { Camera } from './world/Camera.js';
 import { Walker } from './entities/Walker.js';
-// On peut importer MobZombie pour vérifier le type, ou utiliser le "Duck Typing" (voir plus bas)
 
 // --- INITIALISATION ---
 const canvas = document.getElementById('gameCanvas');
@@ -18,7 +18,6 @@ const loader = new LevelLoader();
 
 // --- LISTE DES NIVEAUX ---
 const LEVELS = [
-    'assets/niveau12.txt',
     'assets/niveau1.txt',
     'assets/niveau2.txt',
     'assets/niveau3.txt',
@@ -26,9 +25,10 @@ const LEVELS = [
     'assets/niveau5.txt',
     'assets/niveau6.txt',
     'assets/niveau7.txt',
-    'assets/niveau10.txt',
     'assets/niveaugemini.txt',
-    'assets/niveau11.txt'
+    'assets/niveau11.txt',
+    'assets/niveau12.txt',
+
 ];
 
 // --- ÉTAT DU JEU ---
@@ -147,15 +147,51 @@ function update(dt) {
         // 1. Mise à jour du Joueur
         player.update(input, currentLevel);
 
-        // 2. Gestion du RESET (Mort du joueur)
-        // La logique est déportée dans la fonction handlePlayerDeath
+        // ==========================================
+        // 2. GESTION DU RESET (Mort du joueur)
+        // ==========================================
         if (player.justDied) {
-            handlePlayerDeath();
+            console.log("-> Reset du niveau demandé.");
+            
+            if (currentLevel.mobs) {
+                currentLevel.mobs.forEach(mob => {
+                    if (typeof mob.reset === 'function') {
+                        mob.reset(); 
+                    }
+                });
+            }
+            player.justDied = false;
         }
 
-        // 3. Gestion des Mobs (IA, Aggro, Update)
-        // La logique est déportée dans la fonction updateMobs
-        updateMobs(dt);
+        // ==========================================
+        // 3. GESTION INTELLIGENTE DES MOBS (Aggro unique)
+        // ==========================================
+        if (currentLevel.mobs) {
+            // A. Trouver le mob le plus proche
+            let nearestMob = null;
+            let minDistance = Infinity;
+            const MAX_AGGRO_RANGE = 600; // Distance max pour commencer à chasser
+
+            currentLevel.mobs.forEach(mob => {
+                if (mob.isAlive) {
+                    const dist = Math.abs(mob.x - player.x);
+                    if (dist < MAX_AGGRO_RANGE && dist < minDistance) {
+                        minDistance = dist;
+                        nearestMob = mob;
+                    }
+                }
+            });
+
+            // B. Mettre à jour les mobs
+            currentLevel.mobs.forEach(mob => {
+                if (mob.update) {
+                    // Seul le mob le plus proche a le droit d'être agressif
+                    const canAggro = (mob === nearestMob);
+                    
+                    mob.update(dt, currentLevel.blocks, player, canAggro);
+                }
+            });
+        }
 
         // 4. Mise à jour des NPCs
         if (currentLevel.npcs) {
@@ -168,81 +204,6 @@ function update(dt) {
         gameState.currentTime += dt;
         checkVictory();
     }
-}
-
-// --- FONCTIONS AJOUTÉES (Gestion Mobs) ---
-
-/**
- * Gère la réinitialisation des mobs quand le joueur meurt
- */
-function handlePlayerDeath() {
-    console.log("-> Reset du niveau demandé.");
-            
-    if (currentLevel.mobs) {
-        currentLevel.mobs.forEach(mob => {
-            // Si le mob a une méthode reset() (ex: MobZombie), on l'appelle
-            if (typeof mob.reset === 'function') {
-                mob.reset(); 
-            } 
-            // Sinon (ex: ancien Walker), on fait un reset manuel si possible
-            else if (mob.startX !== undefined && mob.startY !== undefined) {
-                mob.x = mob.startX;
-                mob.y = mob.startY;
-                if (mob.vx !== undefined) mob.vx = 0;
-                if (mob.vy !== undefined) mob.vy = 0;
-            }
-        });
-    }
-    player.justDied = false;
-}
-
-/**
- * Gère l'IA des mobs et leur mise à jour
- */
-function updateMobs(dt) {
-    if (!currentLevel.mobs) return;
-
-    // A. Trouver le mob le plus proche (Système d'Aggro unique)
-    let nearestMob = null;
-    let minDistance = Infinity;
-    const MAX_AGGRO_RANGE = 600; // Distance max pour commencer à chasser
-
-    currentLevel.mobs.forEach(mob => {
-        if (mob.isAlive !== false) { // Vérifie qu'il n'est pas mort (si la propriété existe)
-            const dist = Math.abs(mob.x - player.x);
-            if (dist < MAX_AGGRO_RANGE && dist < minDistance) {
-                minDistance = dist;
-                nearestMob = mob;
-            }
-        }
-    });
-
-    // B. Mettre à jour les mobs
-    currentLevel.mobs.forEach(mob => {
-        if (mob.update) {
-            // Seul le mob le plus proche a le droit d'être agressif (pour optimiser)
-            // (Note: Cela dépend si le mob utilise ce paramètre 'canAggro')
-            const canAggro = (mob === nearestMob);
-            
-            // GESTION DE COMPATIBILITÉ :
-            // Problème : Walker a évolué (plus d'arguments), donc .length >= 3 le confond avec MobZombie.
-            
-            // 1. On vérifie explicitement si c'est un Walker
-            if (mob instanceof Walker) {
-                // Signature Walker : a besoin de 'blocks' en 2ème argument
-                mob.update(dt, currentLevel.blocks, player, canAggro);
-            } 
-            // 2. Sinon, si c'est un MobZombie ou autre mob "moderne" (signature à 3 args)
-            else if (mob.update.length >= 3) {
-                // Signature MobZombie : (dt, player, level)
-                mob.update(dt, player, currentLevel);
-            } 
-            // 3. Fallback
-            else {
-                mob.update(dt, currentLevel.blocks, player, canAggro);
-            }
-        }
-    });
 }
 
 // --- VÉRIFICATION VICTOIRE ---
