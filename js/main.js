@@ -7,6 +7,33 @@ import { InputHandler } from './input/InputHandler.js';
 import { Camera } from './world/Camera.js';
 import { Walker } from './entities/Walker.js';
 
+const SaveManager = {
+    getKey: (levelIndex) => `gallame_level_${levelIndex}`,
+
+    saveScore: (levelIndex, time, deaths) => {
+        const key = SaveManager.getKey(levelIndex);
+        const savedData = SaveManager.getScore(levelIndex);
+
+        // On sauvegarde si c'est la première fois OU si le temps est meilleur
+        if (!savedData || time < savedData.time) {
+            const data = {
+                time: parseFloat(time.toFixed(2)), // On garde 2 décimales
+                deaths: deaths,
+                date: new Date().toLocaleDateString()
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+            console.log(`💾 Nouveau record pour le niveau ${levelIndex + 1} !`);
+            return true; // C'est un record
+        }
+        return false;
+    },
+
+    getScore: (levelIndex) => {
+        const data = localStorage.getItem(SaveManager.getKey(levelIndex));
+        return data ? JSON.parse(data) : null;
+    }
+};
+
 // --- INITIALISATION ---
 const canvas = document.getElementById('gameCanvas');
 canvas.width = GameConfig.WINDOW_WIDTH;
@@ -43,16 +70,19 @@ const gameState = {
     countdown: 0,
     isGameWon: false,
     currentTime: 0,
+    // Stats du niveau en cours
+    levelTimer: 0,      // Temps actuel (remis à 0 si mort)
+    levelDeaths: 0,     // Morts cumulées sur ce niveau
     bestTime: Infinity,
     isLoading: false,
-    enterWasPressed: false
+    enterWasPressed: false,
+    isPlaying: false 
 };
 
 // --- DÉMARRAGE ---
 async function start() {
     GameConfig.printScaleInfo();
-    await loadLevel(currentLevelIndex);
-    requestAnimationFrame(gameLoop);
+    showMainMenu();
 }
 
 // --- FONCTION DE CHARGEMENT ---
