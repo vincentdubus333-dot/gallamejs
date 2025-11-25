@@ -1,0 +1,27 @@
+name, Test
+start, 0, 50
+sky, #ff
+
+# Tour gauche
+bloc, 310, 0, 80, 110, deadly
+bloc, 300, 110, 100, 20, #fff
+bloc, 310, 130, 80, 110, deadly
+bloc, 300, 240, 100, 20, #fff
+bloc, 310, 260, 80, 110, deadly
+bloc, 300, 370, 100, 20, #fff
+
+bloc, 150, 150, 20, 350, #fff
+
+
+bloc, 500, 370, 100, 20, #fff
+
+bloc, 700, 370, 20, 20, #fff
+bloc, 800, 370, 20, 20, #fff
+
+bloc, 390,0, 700, 10, deadly
+bloc, 900, 500, 200, 20, deadly
+
+bloc, 900, 10, 20, 380, #fff
+
+# En haut
+fin, 1300, 20, 50, 50

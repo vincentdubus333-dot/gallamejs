@@ -105,7 +105,7 @@ export class Level {
         }
 
         // 4. Portes (Derrière les blocs)
-        // TODO: this.doors.forEach(d => d.draw(ctx, camX, camY));
+        this.doors.forEach(d => d.draw(ctx, camX, camY));
 
         // 5. Blocs (Plateformes)
         this.blocks.forEach(block => block.draw(ctx, camX, camY));

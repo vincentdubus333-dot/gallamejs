@@ -17,6 +17,8 @@ const loader = new LevelLoader();
 
 // --- LISTE DES NIVEAUX ---
 const LEVELS = [
+    'assets/niveau10.txt',
+    'assets/niveau11.txt',
     'assets/niveau1.txt',
     'assets/niveau2.txt',
     'assets/niveau3.txt',
@@ -25,8 +27,7 @@ const LEVELS = [
     'assets/niveau6.txt',
     'assets/niveau7.txt',
     'assets/niveau8.txt',
-    'assets/niveaugemini.txt',
-    'assets/niveau10.txt'
+    'assets/niveaugemini.txt'
 ];
 
 // --- ÉTAT DU JEU ---
