@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gallame Level Editor - V4 (Zoomable)</title>
+    <style>
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #222; }
+        
+        /* Zone de texte (Gauche) */
+        #editor-container {
+            width: 30%;
+            background: #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #555;
+            z-index: 10;
+        }
+        .toolbar {
+            padding: 10px;
+            background: #333;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-bottom: 1px solid #555;
+        }
+        .toolbar-row { display: flex; justify-content: space-between; align-items: center; }
+        
+        textarea {
+            flex-grow: 1;
+            background: #1e1e1e;
+            color: #a9b7c6;
+            border: none;
+            padding: 15px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            white-space: pre;
+        }
+
+        /* Zone de visualisation (Droite) */
+        #preview-container {
+            width: 70%;
+            background: #555; /* Gris neutre pour le fond hors canvas */
+            overflow: auto;
+            position: relative;
+            display: flex;
+	    align-items: flex-start;     /* ⭐ Changé de center à flex-start */
+            justify-content: flex-start;
+        }
+        
+        canvas {
+    display: block;
+    background: white;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    margin: 0; /* ⭐ Forcer la marge à 0 */
+    flex-shrink: 0; /* ⭐ Empêcher le canvas de rétrécir */
+}
+
+        /* Info bulle curseur */
+        #cursor-info {
+            position: fixed;
+            bottom: 20px;
+            right: 40px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid #0f0;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        /* Style du slider */
+        input[type=range] { vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <div id="editor-container">
+        <div class="toolbar">
+            <div class="toolbar-row">
+                <h2 style="margin:0; font-size:16px;">Level Editor V4</h2>
+                <span style="color:#aaa">Y=0 est le SOL</span>
+            </div>
+            <div class="toolbar-row">
+                <label for="zoomSlider">Zoom: <span id="zoomValue">100%</span></label>
+                <input type="range" id="zoomSlider" min="0.1" max="2.0" step="0.1" value="1.0" style="width: 120px;">
+            </div>
+        </div>
+        <textarea id="inputData" spellcheck="false">
+# Niveau Vaste
+name, Zoom Test
+start, 50, 50
+sky, #87CEEB
+
+# Sol immense
+bloc, 0, 0, 3000, 20
+
+# Tour gauche
+bloc, 200, 100, 100, 20
+bloc, 200, 300, 100, 20
+bloc, 200, 500, 100, 20
+bloc, 200, 700, 100, 20
+bloc, 200, 900, 100, 20
+bloc, 200, 1100, 100, 20
+
+# Tour droite (très loin)
+bloc_colored, 2500, 400, 200, 50, #ff0000
+npc, 2600, 450, 40, 60, null, Je suis loin !
+
+# En haut
+fin, 1500, 1500, 50, 50
+        </textarea>
+    </div>
+
+    <div id="preview-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="cursor-info">X: 0 | Y_SOL: 0</div>
+
+<script>
+    const textarea = document.getElementById('inputData');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cursorInfo = document.getElementById('cursor-info');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValueLabel = document.getElementById('zoomValue');
+    const previewContainer = document.getElementById('preview-container');
+
+    // Config Visuelle Constante (en pixels "Monde")
+    const GROUND_DISPLAY_HEIGHT = 200; 
+    const SKY_MARGIN_TOP = 400;
+
+    // État Global
+    let currentZoom = 1.0;
+    let worldZeroY = 0; // Position Y du sol dans le monde (non zoomé)
+    let worldOffsetX = 0; // ⭐ Variable globale pour l'offset
+
+    function parseAndRender() {
+        const text = textarea.value;
+        const lines = text.split('\n');
+        
+        let config = { sky: "#81e1ff", ground: "#99edc3", maxX: 1000, maxY: 800, minX: 0 };
+        let objects = [];
+
+        // --- 1. PARSING ---
+        lines.forEach(line => {
+            const trimLine = line.trim();
+            if (!trimLine || trimLine.startsWith('#')) return;
+
+            let parts = trimLine.split(',').map(s => s.trim());
+            let type = parts[0].toLowerCase();
+            let data = parts.slice(1);
+
+            if (type.startsWith("mob_")) { data.unshift(type.substring(4)); type = "mob"; }
+
+            function checkBounds(x, y, w, h) {
+                const r = x + (w||0); 
+                const t = y + (h||0);
+                const l = x;
+                if (r > config.maxX) config.maxX = r + 500;
+                if (l < config.minX) config.minX = l - 500;
+                if (t > config.maxY) config.maxY = t;
+            }
+
+            let o = null;
+            if (type.includes('bloc')) {
+                o = { type: 'block', subtype: type, x: +data[0], y: +data[1], w: +data[2], h: +data[3], extra: data[4]||'NORMAL' };
+            } else if (type === 'start') {
+                o = { type: 'start', x: +data[0], y: +data[1], w: 20, h: 20 };
+            } else if (type === 'fin') {
+                o = { type: 'fin', x: +data[0], y: +data[1], w: +data[2], h: +data[3] };
+            } else if (type === 'mob') {
+                o = { type: 'mob', mobType: data[0], x: +data[1], y: +data[2], w: 30, h: 40 };
+            } else if (type === 'npc') {
+                o = { type: 'npc', x: +data[0], y: +data[1], w: +data[2], h: +data[3], msg: parts.slice(6).join(',') };
+            } else if (type === 'door' || type === 'porte') {
+                o = { type: 'door', x: +data[0], y: +data[1], w: +data[2], h: +data[3], target: data[4] };
+            } else if (type === 'image' || type === 'background') {
+                o = { type: 'bg_image', path: data[0], x: +data[1], y: +data[2], w: +data[3], h: +data[4] };
+            } else if (type === 'sky') config.sky = data[0];
+            else if (type === 'ground') config.ground = data[0];
+
+            if (o) { checkBounds(o.x, o.y, o.w, o.h); objects.push(o); }
+        });
+
+        // --- 2. CALCUL DIMENSIONS avec OFFSET ---
+        const LEFT_PADDING = 500;
+        worldOffsetX = Math.abs(Math.min(config.minX, 0)) + LEFT_PADDING; // ⭐ Variable globale
+        
+        const worldHeight = config.maxY + SKY_MARGIN_TOP + GROUND_DISPLAY_HEIGHT;
+        const worldWidth = config.maxX - config.minX + LEFT_PADDING + 500;
+
+        worldZeroY = worldHeight - GROUND_DISPLAY_HEIGHT;
+
+        canvas.width = worldWidth * currentZoom;
+        canvas.height = worldHeight * currentZoom;
+
+        // --- 3. RENDU ---
+        ctx.save();
+        ctx.scale(currentZoom, currentZoom);
+        ctx.translate(worldOffsetX, 0);
+
+        // Ciel
+        ctx.fillStyle = config.sky;
+        ctx.fillRect(-worldOffsetX, 0, worldWidth, worldZeroY);
+
+        // Sol
+        ctx.fillStyle = config.ground;
+        ctx.fillRect(-worldOffsetX, worldZeroY, worldWidth, GROUND_DISPLAY_HEIGHT);
+        
+        // Ligne Y=0
+        ctx.beginPath(); 
+        ctx.moveTo(-worldOffsetX, worldZeroY);
+        ctx.lineTo(worldWidth - worldOffsetX, worldZeroY);
+        ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 2; ctx.stroke();
+
+        const getY = (y, h) => worldZeroY - y - (h||0);
+
+        objects.forEach(obj => {
+            let cy = getY(obj.y, obj.h);
+
+            if (obj.type === 'block') {
+                ctx.fillStyle = '#555';
+                if (obj.subtype.includes('colored')) ctx.fillStyle = obj.extra;
+                else if (String(obj.extra).toUpperCase() === 'DEADLY') ctx.fillStyle = '#d32f2f';
+                else if (String(obj.extra).toUpperCase() === 'ICE') ctx.fillStyle = '#b3e5fc';
+                
+                ctx.fillRect(obj.x, cy, obj.w, obj.h);
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(obj.x, cy, obj.w, obj.h);
+                if(obj.subtype.includes('textured')) { ctx.fillStyle='black'; ctx.fillText("IMG", obj.x+2, cy+12); }
+            }
+            else if (obj.type === 'start') {
+                ctx.fillStyle = '#00e676'; ctx.beginPath(); ctx.arc(obj.x, cy+15, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black'; ctx.font="10px Arial"; ctx.fillText("START", obj.x-15, cy-5);
+            }
+            else if (obj.type === 'fin') {
+                ctx.fillStyle = 'gold'; ctx.fillRect(obj.x, cy, obj.w, obj.h);
+                ctx.strokeRect(obj.x, cy, obj.w, obj.h);
+                ctx.fillStyle = 'black'; ctx.fillText("FIN", obj.x+5, cy+15);
+            }
+            else if (obj.type === 'mob') {
+                ctx.fillStyle = '#f44336'; ctx.fillRect(obj.x, cy, obj.w, obj.h);
+                ctx.fillStyle = 'white'; ctx.fillRect(obj.x+5, cy+10, 5,5); ctx.fillRect(obj.x+20, cy+10, 5,5);
+            }
+            else if (obj.type === 'npc') {
+                ctx.fillStyle = '#ce93d8'; ctx.fillRect(obj.x, cy, obj.w, obj.h);
+                if(obj.msg) {
+                    ctx.fillStyle = 'white'; ctx.strokeStyle='black';
+                    let w = ctx.measureText(obj.msg).width + 10;
+                    ctx.fillRect(obj.x, cy-25, w, 20); ctx.strokeRect(obj.x, cy-25, w, 20);
+                    ctx.fillStyle='black'; ctx.fillText(obj.msg, obj.x+5, cy-12);
+                }
+            }
+            else if (obj.type === 'door') {
+                ctx.fillStyle = '#8d6e63'; ctx.fillRect(obj.x, cy, obj.w, obj.h);
+                ctx.fillStyle = 'white'; ctx.fillText(obj.target||"?", obj.x, cy-5);
+            }
+            else if (obj.type === 'bg_image') {
+                ctx.strokeStyle = 'blue'; ctx.setLineDash([5,5]); ctx.strokeRect(obj.x, cy, obj.w, obj.h);
+                ctx.setLineDash([]);
+                ctx.fillStyle='blue'; ctx.fillText("IMG", obj.x+5, cy+15);
+            }
+        });
+
+        ctx.restore();
+	const scrollXPercent = previewContainer.scrollLeft / (previewContainer.scrollWidth - previewContainer.clientWidth || 1);
+        const scrollYPercent = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight || 1);
+        
+        // Forcer le recalcul (hack pour Chrome/Firefox)
+        previewContainer.style.overflow = 'hidden';
+        setTimeout(() => {
+            previewContainer.style.overflow = 'auto';
+            // Restaurer la position en pourcentage
+            if (previewContainer.scrollWidth > previewContainer.clientWidth) {
+                previewContainer.scrollLeft = scrollXPercent * (previewContainer.scrollWidth - previewContainer.clientWidth);
+            }
+            if (previewContainer.scrollHeight > previewContainer.clientHeight) {
+                previewContainer.scrollTop = scrollYPercent * (previewContainer.scrollHeight - previewContainer.clientHeight);
+            }
+        }, 0);
+    }
+
+    // GESTION DU ZOOM
+    zoomSlider.addEventListener('input', (e) => {
+        currentZoom = parseFloat(e.target.value);
+        zoomValueLabel.innerText = Math.round(currentZoom * 100) + "%";
+        parseAndRender();
+    });
+
+    // ⭐ ÉCOUTE DES CHANGEMENTS DANS LE TEXTAREA
+    textarea.addEventListener('input', parseAndRender);
+
+    // TRACKER SOURIS (Adapté avec l'offset)
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        
+        const pixelX = e.clientX - rect.left;
+        const pixelY = e.clientY - rect.top;
+
+        const worldX = (pixelX / currentZoom) - worldOffsetX;
+        const worldY_pixel = pixelY / currentZoom;
+
+        const solY = worldZeroY - worldY_pixel;
+
+        cursorInfo.innerText = `X: ${Math.round(worldX)} | Y_SOL: ${Math.round(solY)}`;
+        
+        if (solY < 0) cursorInfo.style.color = 'red';
+        else cursorInfo.style.color = '#0f0';
+    });
+
+    // Init
+    parseAndRender();
+    
+    // Scroll en bas pour commencer au sol
+    setTimeout(() => {
+        previewContainer.scrollTop = previewContainer.scrollHeight;
+    }, 100);
+
+</script>
+
+</body>
+</html>
