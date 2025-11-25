@@ -165,18 +165,19 @@ export class Player {
     }
 
 handleJump(input, blocks) {
-        // Saut : possible si on n'a pas encore sauté
-        if (input.up && !this.hasJumped) {
+        // Saut normal ou saut bonus Glide
+        if (input.up && (this.onGround || this.hasGlideJump) && !this.jumping) {
             this.vy = GameConfig.JUMP_VELOCITY;
-            this.hasJumped = true; // Marque qu'on a utilisé notre saut
-            console.log("Saut utilisé !");
+            this.jumping = true;
+            this.onGround = false;
+            this.hasGlideJump = false; 
         }
-        // Wall jump
+        // Wall jump (Fonctionne maintenant même en simple chute)
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
-        
-        // Gestion du glide : MAINTENIR DOWN pour rester accroché
+
+        // Glide
         if (input.down) {
             if (!this.gliding) {
                 this.tryGrabCeiling(blocks);
@@ -185,6 +186,7 @@ handleJump(input, blocks) {
             if (this.gliding) {
                 this.gliding = false;
                 this.glidingBlock = null;
+                this.hasGlideJump = true; 
             }
         }
     }
