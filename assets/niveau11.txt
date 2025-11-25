@@ -1,6 +1,6 @@
 name, Test
 start, 0, 50
-sky, #fff
+sky, #000000
 
 # Tour gauche
 bloc, 310, 0, 80, 110, deadly
