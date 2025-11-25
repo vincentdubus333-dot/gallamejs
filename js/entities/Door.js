@@ -5,8 +5,19 @@ export class Door {
         this.width = width;
         this.height = height;
         this.targetLevelFile = targetLevelFile;
-        this.image = image; // Peut être null
-        this.isActive = false; // Géré par le jeu
+        this.targetX = targetX;  // Position X cible dans le nouveau niveau
+        this.targetY = targetY;  // Position Y cible (depuis le sol)
+        this.image = image;
+        this.isActive = false;
+    }
+
+    getBounds() {
+        return {
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height
+        };
     }
 
     draw(ctx, camX, camY) {

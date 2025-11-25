@@ -61,10 +61,15 @@ export class Renderer {
         level.blocks.forEach(block => block.draw(ctx, camX, camY));
 
         // 7. Entités
-        level.doors.forEach(door => {
-            door.draw(ctx, camX, camY);
-            if (door.isActive) door.drawInteractionPrompt(ctx, camX, camY);
-        });
+
+// Dessiner les prompts des portes actives
+if (level.doors) {
+    level.doors.forEach(door => {
+        if (door.isActive) {
+            door.drawInteractionPrompt(ctx, camera.x, camera.y);
+        }
+    });
+}
 
         level.mobs.forEach(mob => {
             if (mob.isAlive) mob.draw(ctx, camX, camY);
