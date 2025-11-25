@@ -1,10 +1,11 @@
-// js/main.js
 import { GameConfig } from './GameConfig.js';
 import { LevelLoader } from './level/LevelLoader.js';
 import { Renderer } from './rendering/Renderer.js';
 import { Player } from './entities/Player.js';
 import { InputHandler } from './input/InputHandler.js';
 import { Camera } from './world/Camera.js';
+import { Walker } from './entities/Walker.js';
+// On peut importer MobZombie pour vérifier le type, ou utiliser le "Duck Typing" (voir plus bas)
 
 // --- INITIALISATION ---
 const canvas = document.getElementById('gameCanvas');
@@ -17,8 +18,7 @@ const loader = new LevelLoader();
 
 // --- LISTE DES NIVEAUX ---
 const LEVELS = [
-    'assets/niveau1.txt',
-    'assets/niveau11.txt',
+    'assets/niveau12.txt',
     'assets/niveau1.txt',
     'assets/niveau2.txt',
     'assets/niveau3.txt',
@@ -26,8 +26,9 @@ const LEVELS = [
     'assets/niveau5.txt',
     'assets/niveau6.txt',
     'assets/niveau7.txt',
-    'assets/niveau8.txt',
-    'assets/niveaugemini.txt'
+    'assets/niveau10.txt',
+    'assets/niveaugemini.txt',
+    'assets/niveau11.txt'
 ];
 
 // --- ÉTAT DU JEU ---
@@ -44,8 +45,7 @@ const gameState = {
     currentTime: 0,
     bestTime: Infinity,
     isLoading: false,
-    enterWasPressed: false,
-    eKeyWasPressed: false // Pour éviter les doubles activations de porte
+    enterWasPressed: false
 };
 
 // --- DÉMARRAGE ---
@@ -64,7 +64,6 @@ async function loadLevel(index) {
     gameState.isLoading = true;
     gameState.isGameWon = false;
     gameState.enterWasPressed = false;
-    gameState.eKeyWasPressed = false;
 
     if (index >= LEVELS.length) {
         alert("Félicitations ! Tu as terminé tous les niveaux !");
@@ -108,121 +107,6 @@ async function loadLevel(index) {
     }
 }
 
-// --- CHARGEMENT D'UN NIVEAU VIA PORTE ---
-async function loadLevelFromDoor(door) {
-    if (gameState.isLoading) return;
-    
-    console.log(`🚪 Tentative d'ouverture de porte vers : ${door.targetLevelFile}`);
-    console.log(`📍 Cible demandée : X=${door.targetX}, Y=${door.targetY}`);
-
-    gameState.isLoading = true;
-    gameState.isGameWon = false;
-    gameState.eKeyWasPressed = false;
-
-    try {
-        // 1. Tenter de charger le niveau
-        const nextLevel = await loader.load(door.targetLevelFile);
-
-        if (!nextLevel) {
-            throw new Error(`Le fichier "${door.targetLevelFile}" est introuvable ou vide.`);
-        }
-
-        // 2. Si le chargement réussit, on remplace le niveau actuel
-        currentLevel = nextLevel;
-
-        // 3. Calcul de la nouvelle position du joueur
-        let newX, newY;
-
-        // Vérification stricte que les coordonnées sont des nombres valides (pas null, pas NaN)
-        if (door.targetX !== null && !isNaN(door.targetX) && 
-            door.targetY !== null && !isNaN(door.targetY)) {
-            
-            newX = door.targetX;
-            // Conversion : targetY est la hauteur depuis le sol
-            newY = GameConfig.GROUND_Y - door.targetY - GameConfig.PLAYER_SIZE;
-            console.log(`✅ Spawn porte utilisé : (${newX}, ${newY})`);
-        } else {
-            // Repli sur le point de départ du niveau (start)
-            newX = currentLevel.startX;
-            newY = currentLevel.startY;
-            console.log(`⚠️ Pas de coordonnées porte valides, utilisation du Start niveau : (${newX}, ${newY})`);
-        }
-
-        // 4. Création du joueur et reset caméra
-        player = new Player(newX, newY);
-        player.vx = 0; // On s'assure qu'il ne glisse pas en arrivant
-        player.vy = 0;
-
-        camera.x = player.x - (GameConfig.WINDOW_WIDTH / 2);
-        camera.y = player.y - (GameConfig.WINDOW_HEIGHT / 2);
-        camera.targetX = camera.x;
-        camera.targetY = camera.y;
-
-        gameState.currentTime = 0;
-
-    } catch (e) {
-        alert(`Impossible d'entrer : ${e.message}`);
-        console.error("Erreur porte:", e);
-    } finally {
-        gameState.isLoading = false;
-        // Petit délai pour éviter de réactiver une porte immédiatement en arrivant
-        setTimeout(() => { gameState.eKeyWasPressed = false; }, 500);
-    }
-}
-
-// --- VÉRIFICATION DES COLLISIONS ---
-function checkCollision(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.width &&
-        rect1.x + rect1.width > rect2.x &&
-        rect1.y < rect2.y + rect2.height &&
-        rect1.y + rect1.height > rect2.y;
-}
-
-// --- VÉRIFICATION DES PORTES ---
-function checkDoorInteraction() {
-    if (!currentLevel || !player) return;
-
-    const playerBounds = {
-        x: player.x,
-        y: player.y,
-        width: player.width,
-        height: player.height
-    };
-
-    let doorIsNear = false;
-
-    for (const door of currentLevel.doors) {
-        const doorBounds = {
-            x: door.x,
-            y: door.y,
-            width: door.width,
-            height: door.height
-        };
-
-        // Vérifier la collision
-        if (checkCollision(playerBounds, doorBounds)) {
-            door.isActive = true;
-            doorIsNear = true;
-
-            // Si le joueur appuie sur E (et qu'il ne l'avait pas déjà pressé)
-            const eIsDown = input.isDown('e') || input.isDown('E');
-            
-            if (eIsDown && !gameState.eKeyWasPressed) {
-                loadLevelFromDoor(door);
-            }
-            
-            gameState.eKeyWasPressed = eIsDown;
-        } else {
-            door.isActive = false;
-        }
-    }
-
-    // Réinitialiser le flag si aucune porte n'est proche
-    if (!doorIsNear) {
-        gameState.eKeyWasPressed = false;
-    }
-}
-
 // --- BOUCLE DE JEU ---
 function gameLoop(timestamp) {
     const dt = (timestamp - lastTime) / 1000;
@@ -237,35 +121,123 @@ function gameLoop(timestamp) {
 }
 
 // --- MISE À JOUR LOGIQUE ---
+
 function update(dt) {
+    // VICTOIRE : Passage au niveau suivant
     if (gameState.isGameWon) {
         const enterIsDown = input.isDown('Enter');
-
+        
         if (enterIsDown && !gameState.enterWasPressed) {
             console.log("Passage au niveau suivant...");
             currentLevelIndex++;
             loadLevel(currentLevelIndex);
         }
-
+        
         gameState.enterWasPressed = enterIsDown;
         return;
     }
 
-    // Ne pas jouer pendant le chargement
     if (gameState.isLoading) {
         return;
     }
 
-    // Reset du flag Enter quand on joue
     gameState.enterWasPressed = false;
 
     if (player && currentLevel) {
+        // 1. Mise à jour du Joueur
         player.update(input, currentLevel);
+
+        // 2. Gestion du RESET (Mort du joueur)
+        // La logique est déportée dans la fonction handlePlayerDeath
+        if (player.justDied) {
+            handlePlayerDeath();
+        }
+
+        // 3. Gestion des Mobs (IA, Aggro, Update)
+        // La logique est déportée dans la fonction updateMobs
+        updateMobs(dt);
+
+        // 4. Mise à jour des NPCs
+        if (currentLevel.npcs) {
+            currentLevel.npcs.forEach(npc => {
+                if (npc.update) npc.update(dt);
+            });
+        }
+        
         updateCamera();
-        checkDoorInteraction(); // ✅ AJOUT : Vérifier les portes
         gameState.currentTime += dt;
         checkVictory();
     }
+}
+
+// --- FONCTIONS AJOUTÉES (Gestion Mobs) ---
+
+/**
+ * Gère la réinitialisation des mobs quand le joueur meurt
+ */
+function handlePlayerDeath() {
+    console.log("-> Reset du niveau demandé.");
+            
+    if (currentLevel.mobs) {
+        currentLevel.mobs.forEach(mob => {
+            // Si le mob a une méthode reset() (ex: MobZombie), on l'appelle
+            if (typeof mob.reset === 'function') {
+                mob.reset(); 
+            } 
+            // Sinon (ex: ancien Walker), on fait un reset manuel si possible
+            else if (mob.startX !== undefined && mob.startY !== undefined) {
+                mob.x = mob.startX;
+                mob.y = mob.startY;
+                if (mob.vx !== undefined) mob.vx = 0;
+                if (mob.vy !== undefined) mob.vy = 0;
+            }
+        });
+    }
+    player.justDied = false;
+}
+
+/**
+ * Gère l'IA des mobs et leur mise à jour
+ */
+function updateMobs(dt) {
+    if (!currentLevel.mobs) return;
+
+    // A. Trouver le mob le plus proche (Système d'Aggro unique)
+    let nearestMob = null;
+    let minDistance = Infinity;
+    const MAX_AGGRO_RANGE = 600; // Distance max pour commencer à chasser
+
+    currentLevel.mobs.forEach(mob => {
+        if (mob.isAlive !== false) { // Vérifie qu'il n'est pas mort (si la propriété existe)
+            const dist = Math.abs(mob.x - player.x);
+            if (dist < MAX_AGGRO_RANGE && dist < minDistance) {
+                minDistance = dist;
+                nearestMob = mob;
+            }
+        }
+    });
+
+    // B. Mettre à jour les mobs
+    currentLevel.mobs.forEach(mob => {
+        if (mob.update) {
+            // Seul le mob le plus proche a le droit d'être agressif (pour optimiser)
+            // (Note: Cela dépend si le mob utilise ce paramètre 'canAggro')
+            const canAggro = (mob === nearestMob);
+            
+            // GESTION DE COMPATIBILITÉ :
+            // MobZombie attend (dt, player, level)
+            // Walker attend (dt, blocks)
+            // On regarde le nombre d'arguments attendus par la fonction update
+            
+            if (mob.update.length >= 3) {
+                // Signature MobZombie
+                mob.update(dt, player, currentLevel);
+            } else {
+                // Signature Walker (ignore les arguments en trop en JS, donc safe)
+                mob.update(dt, currentLevel.blocks, player, canAggro);
+            }
+        }
+    });
 }
 
 // --- VÉRIFICATION VICTOIRE ---
@@ -277,7 +249,7 @@ function checkVictory() {
             player.x + player.width > zone.rect.x &&
             player.y < zone.rect.y + zone.rect.height &&
             player.y + player.height > zone.rect.y) {
-
+            
             console.log("VICTOIRE ! Zone atteinte.");
             gameState.isGameWon = true;
             player.vx = 0;
