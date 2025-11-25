@@ -45,7 +45,7 @@ const loader = new LevelLoader();
 
 // --- LISTE DES NIVEAUX ---
 const LEVELS = [
-    'assets/niveau1.txt',
+    'assets/niveau13.txt',
     'assets/niveau2.txt',
     'assets/niveau3.txt',
     'assets/niveau4.txt',

@@ -1,0 +1,60 @@
+name, Le Couloir de la Mort
+start, 50, 150
+sky, #1a1a1a
+
+# --- ZONE 1 : L'Échauffement ---
+# Sol de départ
+bloc_colored, 0, 50, 200, 50, #fff
+
+# Fossé de pics
+bloc, 200, 20, 800, 20, deadly
+
+# Plateformes suspendues
+bloc_colored, 300, 150, 100, 20, #fff
+bloc_colored, 550, 250, 100, 20, #fff
+bloc_colored, 800, 150, 100, 20, #fff
+
+# --- ZONE 2 : Le Presse-Citron ---
+# Le joueur doit rester au milieu
+bloc_colored, 1000, 200, 600, 20, #fff
+
+# Plafond mortel (force petits sauts)
+bloc, 1000, 350, 600, 20, deadly
+# Sol mortel
+bloc, 1000, 50, 600, 20, deadly
+
+# Mobs lents
+mob_walker, 1100, 200, 3
+mob_walker, 1400, 200, 3
+
+# --- ZONE 3 : La Tour en Zig-Zag (CORRIGÉ) ---
+# Il faut sauter de plateforme en plateforme en revenant en arrière
+
+# 2. Plateforme Gauche (niveau moyen - retour arrière)
+bloc_colored, 1550, 320, 100, 20, #fff
+
+# 3. Plateforme Droite (niveau haut)
+bloc_colored, 1750, 440, 100, 20, #fff
+
+# 4. Palier de sortie
+bloc_colored, 2000, 500, 200, 20, #fff
+
+# Punition : Pics au sol si on rate le saut
+bloc, 1550, 50, 1600, 20, deadly
+
+# --- ZONE 4 : Le Sprint Final ---
+# Grande ligne droite en hauteur
+bloc_colored, 2200, 600, 800, 20, #fff
+
+# Ennemis rapides
+mob_walker, 2300, 600, 3
+mob_walker, 2500, 600, 5
+mob_walker, 2700, 600, 3
+
+# Obstacle à sauter pendant la course
+bloc, 2600, 520, 50, 100, deadly
+
+# --- ARRIVÉE ---
+# Saut final vers la victoire
+bloc_colored, 3100, 400, 200, 20, #fff
+fin, 3150, 450, 50, 50
