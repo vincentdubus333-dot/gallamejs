@@ -158,9 +158,12 @@ export class Player {
     }
 
     handleWallRide(onLeftWall) {
-        if (this.jumping && this.vy > 0 && this.forcedMovementFrames === 0) {
+        // CORRECTION : On retire "this.jumping" pour permettre le wall ride même en tombant d'une corniche
+        if (this.vy > 0 && this.forcedMovementFrames === 0) {
             this.wallRiding = true;
             this.wallRideLeft = onLeftWall;
+            
+            // On plafonne la vitesse de chute
             if (this.vy > GameConfig.WALL_SLIDE_SPEED) {
                 this.vy = GameConfig.WALL_SLIDE_SPEED;
             }
