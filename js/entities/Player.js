@@ -167,14 +167,15 @@ export class Player {
         }
     }
 
-    handleJump(input, blocks) {
-        // <--- CORRECTION : Maintenant 'this.onGround' est correctement défini
-        if (input.up && (this.onGround || this.hasGlideJump) && !this.jumping) {
-            this.vy = GameConfig.JUMP_VELOCITY;
-            this.jumping = true;
-            this.onGround = false;
-            this.hasGlideJump = false; 
-        }
+handleJump(input, blocks) {
+    // J'ai enlevé "&& !this.jumping" car si onGround est true, c'est qu'on peut sauter.
+    if (input.up && (this.onGround || this.hasGlideJump)) {
+        console.log("Saut déclenché !"); // Pour vérifier dans la console
+        this.vy = GameConfig.JUMP_VELOCITY;
+        this.jumping = true;
+        this.onGround = false;
+        this.hasGlideJump = false; 
+    }
         else if (input.up && this.wallRiding) {
             this.applyWallJump(this.wallRideLeft);
         }
@@ -275,6 +276,6 @@ export class Player {
         this.wallRiding = false;
         this.jumping = false;
         this.forcedMovementFrames = 0;
-        this.onGround = false; // <--- CORRECTION : Reset aussi à la mort
+        this.onGround = false;
     }
 }
