@@ -7,33 +7,6 @@ import { InputHandler } from './input/InputHandler.js';
 import { Camera } from './world/Camera.js';
 import { Walker } from './entities/Walker.js';
 
-const SaveManager = {
-    scores: {}, // Stockage en mémoire
-    
-    getKey: (levelIndex) => `level_${levelIndex}`,
-
-    saveScore: (levelIndex, time, deaths) => {
-        const key = SaveManager.getKey(levelIndex);
-        const savedData = SaveManager.getScore(levelIndex);
-
-        if (!savedData || time < savedData.time) {
-            SaveManager.scores[key] = {
-                time: parseFloat(time.toFixed(2)),
-                deaths: deaths,
-                date: new Date().toLocaleDateString()
-            };
-            console.log(`💾 Nouveau record pour le niveau ${levelIndex + 1} !`);
-            return true;
-        }
-        return false;
-    },
-
-    getScore: (levelIndex) => {
-        const key = SaveManager.getKey(levelIndex);
-        return SaveManager.scores[key] || null;
-    }
-};
-
 // --- INITIALISATION ---
 const canvas = document.getElementById('gameCanvas');
 canvas.width = GameConfig.WINDOW_WIDTH;
@@ -45,7 +18,7 @@ const loader = new LevelLoader();
 
 // --- LISTE DES NIVEAUX ---
 const LEVELS = [
-    'assets/niveau13.txt',
+    'assets/niveau1.txt',
     'assets/niveau2.txt',
     'assets/niveau3.txt',
     'assets/niveau4.txt',
@@ -70,19 +43,16 @@ const gameState = {
     countdown: 0,
     isGameWon: false,
     currentTime: 0,
-    // Stats du niveau en cours
-    levelTimer: 0,      // Temps actuel (remis à 0 si mort)
-    levelDeaths: 0,     // Morts cumulées sur ce niveau
     bestTime: Infinity,
     isLoading: false,
-    enterWasPressed: false,
-    isPlaying: false 
+    enterWasPressed: false
 };
 
 // --- DÉMARRAGE ---
 async function start() {
     GameConfig.printScaleInfo();
-    showMainMenu();
+    await loadLevel(currentLevelIndex);
+    requestAnimationFrame(gameLoop);
 }
 
 // --- FONCTION DE CHARGEMENT ---
