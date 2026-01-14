@@ -8,29 +8,29 @@ import { Camera } from './world/Camera.js';
 import { Walker } from './entities/Walker.js';
 
 const SaveManager = {
-    getKey: (levelIndex) => `gallame_level_${levelIndex}`,
+    scores: {}, // Stockage en mémoire
+    
+    getKey: (levelIndex) => `level_${levelIndex}`,
 
     saveScore: (levelIndex, time, deaths) => {
         const key = SaveManager.getKey(levelIndex);
         const savedData = SaveManager.getScore(levelIndex);
 
-        // On sauvegarde si c'est la première fois OU si le temps est meilleur
         if (!savedData || time < savedData.time) {
-            const data = {
-                time: parseFloat(time.toFixed(2)), // On garde 2 décimales
+            SaveManager.scores[key] = {
+                time: parseFloat(time.toFixed(2)),
                 deaths: deaths,
                 date: new Date().toLocaleDateString()
             };
-            localStorage.setItem(key, JSON.stringify(data));
             console.log(`💾 Nouveau record pour le niveau ${levelIndex + 1} !`);
-            return true; // C'est un record
+            return true;
         }
         return false;
     },
 
     getScore: (levelIndex) => {
-        const data = localStorage.getItem(SaveManager.getKey(levelIndex));
-        return data ? JSON.parse(data) : null;
+        const key = SaveManager.getKey(levelIndex);
+        return SaveManager.scores[key] || null;
     }
 };
 
