@@ -1,9 +1,7 @@
 import { GameConfig } from '../GameConfig.js';
 import { BlockType } from '../world/Block.js';
 
-// ==========================================
-// 1. LA CLASSE PRINCIPALE (L'Entité)
-// ==========================================
+
 export class MobZombie {
     constructor(x, y) {
         this.x = x;
@@ -50,11 +48,6 @@ export class MobZombie {
         } else {
             ctx.fillRect(sx + 6, sy + 6, 6, 6);
         }
-
-        // Debug de l'état (facultatif, affiche P ou C au dessus)
-        // ctx.fillStyle = 'white';
-        // ctx.font = '10px Arial';
-        // ctx.fillText(this.stateMachine.currentState.constructor.name.charAt(0), sx + 10, sy - 5);
     }
 
     // Helpers pour la physique
@@ -63,9 +56,6 @@ export class MobZombie {
     }
 }
 
-// ==========================================
-// 2. LA MACHINE À ÉTATS
-// ==========================================
 class StateMachine {
     constructor(mob) {
         this.mob = mob;

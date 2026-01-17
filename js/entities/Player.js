@@ -29,7 +29,7 @@ export class Player {
         // Gliding & Coyote Jump (Saut bonus)
         this.gliding = false;
         this.glidingBlock = null;
-        this.hasGlideJump = false; // Autorise un saut juste après avoir quitté le plafond
+        this.hasGlideJump = false;
 
         // Mouvement forcé (wall jump)
         this.forcedHorizontalVelocity = 0;
@@ -37,14 +37,19 @@ export class Player {
         
         // Signal de mort pour demander le reset du niveau à main.js
         this.justDied = false;
+
+        // COYOTE TIME : Temps de grâce après avoir quitté le sol
+        this.coyoteFrames = 0;
+        this.COYOTE_TIME = 6; // 6 frames = ~100ms à 60fps
     }
 
     update(input, level) {
         const blocks = level.blocks;
         const groundY = GameConfig.GROUND_Y;
 
-        // Reset de l'état "au sol"
-        this.onGround = false; 
+        // Stockage de l'état précédent
+        const wasOnGround = this.onGround;
+        this.onGround = false;
 
         // === 1. MOUVEMENTS HORIZONTAUX ===
         if (this.forcedMovementFrames > 0) {
@@ -82,30 +87,34 @@ export class Player {
             this.jumping = false;
             this.gliding = false;
             this.onGround = true;
-            this.hasGlideJump = false; // On est au sol, on n'a plus besoin du saut bonus de glide
+            this.hasGlideJump = false;
         }
 
         // === 4. COLLISIONS AVEC LES BLOCS ===
         this.handleBlockCollisions(blocks);
 
-        // === 5. SAUT, WALL JUMP ET GLIDE ===
+        // === 5. GESTION DU COYOTE TIME ===
+        if (this.onGround) {
+            this.coyoteFrames = this.COYOTE_TIME;
+        } else if (this.coyoteFrames > 0) {
+            this.coyoteFrames--;
+        }
+
+        // === 6. SAUT, WALL JUMP ET GLIDE ===
         this.handleJump(input, blocks);
     }
 
     handleGliding() {
         const block = this.glidingBlock;
-        // Vérifie si le joueur est toujours sous le bloc
         if (this.x + GameConfig.PLAYER_SIZE > block.x &&
             this.x < block.x + block.width) {
             this.y = block.y + block.height;
             this.vy = 0;
             this.jumping = false;
         } else {
-            // Le joueur n'est plus sous le bloc (il tombe ou lâche)
             this.gliding = false;
             this.glidingBlock = null;
-            // On lui donne une chance de sauter (Coyote Time)
-            this.hasGlideJump = true; 
+            this.hasGlideJump = true;
         }
     }
 
@@ -144,39 +153,33 @@ export class Player {
         if (block.type === BlockType.FINISH) return;
 
         if (minOverlap === overlapTop && this.vy >= 0) {
-            // Atterrissage sur le dessus
             this.y = block.y - GameConfig.PLAYER_SIZE;
             this.vy = 0;
             this.jumping = false;
             this.gliding = false;
-            this.onGround = true; 
+            this.onGround = true;
             this.hasGlideJump = false;
         }
         else if (minOverlap === overlapBottom && this.vy < 0 && !this.gliding) {
-            // Tête contre le bas du bloc
             this.y = block.y + block.height;
             this.vy = 0;
         }
         else if (minOverlap === overlapLeft) {
-            // Collision côté droit du joueur
             this.x = block.x - GameConfig.PLAYER_SIZE;
             this.handleWallRide(false);
-            this.hasGlideJump = false; 
+            this.hasGlideJump = false;
         }
         else if (minOverlap === overlapRight) {
-            // Collision côté gauche du joueur
             this.x = block.x + block.width;
             this.handleWallRide(true);
-            this.hasGlideJump = false; 
+            this.hasGlideJump = false;
         }
     }
 
     handleWallRide(onLeftWall) {
-        // Wall Slide : s'active si on descend contre un mur
         if (this.vy > 0 && this.forcedMovementFrames === 0) {
             this.wallRiding = true;
             this.wallRideLeft = onLeftWall;
-            // Ralentir la chute
             if (this.vy > GameConfig.WALL_SLIDE_SPEED) {
                 this.vy = GameConfig.WALL_SLIDE_SPEED;
             }
@@ -184,13 +187,19 @@ export class Player {
     }
 
     handleJump(input, blocks) {
-        // SAUT STANDARD ou SAUT BONUS (Coyote Jump après glide)
-        // Condition : Appui Haut ET (Au sol OU Saut Bonus Disponible)
-        if (input.up && (this.onGround || this.hasGlideJump) && !this.jumping) {
+        // Condition améliorée : On peut sauter si :
+        // - On est au sol OU
+        // - On a encore du Coyote Time (vient de quitter le sol) OU
+        // - On a le bonus de Glide Jump
+        const canJump = this.onGround || this.coyoteFrames > 0 || this.hasGlideJump;
+
+        // SAUT STANDARD ou SAUT BONUS
+        if (input.up && canJump && !this.jumping) {
             this.vy = GameConfig.JUMP_VELOCITY;
             this.jumping = true;
             this.onGround = false;
-            this.hasGlideJump = false; // Le bonus est consommé
+            this.hasGlideJump = false;
+            this.coyoteFrames = 0; // On consomme le coyote time
         }
         // WALL JUMP
         else if (input.up && this.wallRiding) {
@@ -203,11 +212,10 @@ export class Player {
                 this.tryGrabCeiling(blocks);
             }
         } else {
-            // Si on relâche la touche bas, on lâche le plafond
             if (this.gliding) {
                 this.gliding = false;
                 this.glidingBlock = null;
-                this.hasGlideJump = true; // On active le saut bonus
+                this.hasGlideJump = true;
             }
         }
     }
@@ -245,6 +253,7 @@ export class Player {
         this.forcedMovementFrames = GameConfig.WALL_JUMP_FRAMES;
         this.jumping = true;
         this.wallRiding = false;
+        this.coyoteFrames = 0; // Reset du coyote time
     }
 
     draw(ctx, camX, camY) {
@@ -290,22 +299,20 @@ export class Player {
     die() {
         console.log("Mort !");
         
-        // Reset à la position de départ sauvegardée
-        this.x = this.startX; 
-        this.y = this.startY; 
+        this.x = this.startX;
+        this.y = this.startY;
         
         this.vx = 0;
         this.vy = 0;
         
-        // Reset des états
         this.gliding = false;
         this.glidingBlock = null;
         this.hasGlideJump = false;
         this.wallRiding = false;
         this.jumping = false;
         this.forcedMovementFrames = 0;
+        this.coyoteFrames = 0; // Reset du coyote time
 
-        // Signal pour main.js : "Reset les mobs !"
-        this.justDied = true; 
+        this.justDied = true;
     }
 }
