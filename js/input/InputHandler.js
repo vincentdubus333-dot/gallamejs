@@ -22,5 +22,6 @@ export class InputHandler {
     get right() { return this.isDown('ArrowRight') || this.isDown('KeyD'); }
     get up() { return this.isDown('ArrowUp') || this.isDown('KeyW') || this.isDown('Space'); }
     get down() { return this.isDown('ArrowDown') || this.isDown('KeyS'); }
-    get enter() { return this.isDown('Enter'); }get enter() { return this.isDown('Enter'); }
-    }
+    get enter() { return this.isDown('Enter'); }
+    get restart() { return this.isDown('KeyR'); }
+}

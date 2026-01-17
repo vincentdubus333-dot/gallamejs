@@ -28,7 +28,6 @@ const LEVELS = [
     'assets/niveaugemini.txt',
     'assets/niveau11.txt',
     'assets/niveau12.txt',
-
 ];
 
 // --- ÉTAT DU JEU ---
@@ -45,7 +44,8 @@ const gameState = {
     currentTime: 0,
     bestTime: Infinity,
     isLoading: false,
-    enterWasPressed: false
+    enterWasPressed: false,
+    restartWasPressed: false
 };
 
 // --- DÉMARRAGE ---
@@ -64,6 +64,7 @@ async function loadLevel(index) {
     gameState.isLoading = true;
     gameState.isGameWon = false;
     gameState.enterWasPressed = false;
+    gameState.restartWasPressed = false;
 
     if (index >= LEVELS.length) {
         alert("Félicitations ! Tu as terminé tous les niveaux !");
@@ -97,6 +98,7 @@ async function loadLevel(index) {
         camera.targetX = camera.x;
         camera.targetY = camera.y;
 
+        // Reset du timer à chaque chargement de niveau
         gameState.currentTime = 0;
 
     } catch (e) {
@@ -121,11 +123,10 @@ function gameLoop(timestamp) {
 }
 
 // --- MISE À JOUR LOGIQUE ---
-
 function update(dt) {
     // VICTOIRE : Passage au niveau suivant
     if (gameState.isGameWon) {
-        const enterIsDown = input.isDown('Enter');
+        const enterIsDown = input.enter;
         
         if (enterIsDown && !gameState.enterWasPressed) {
             console.log("Passage au niveau suivant...");
@@ -141,6 +142,14 @@ function update(dt) {
         return;
     }
 
+    // === GESTION DU RESTART (Touche R) ===
+    const restartIsDown = input.restart;
+    if (restartIsDown && !gameState.restartWasPressed) {
+        console.log("🔄 Restart du niveau (touche R)...");
+        loadLevel(currentLevelIndex);
+        return;
+    }
+    gameState.restartWasPressed = restartIsDown;
     gameState.enterWasPressed = false;
 
     if (player && currentLevel) {
@@ -151,7 +160,10 @@ function update(dt) {
         // 2. GESTION DU RESET (Mort du joueur)
         // ==========================================
         if (player.justDied) {
-            console.log("-> Reset du niveau demandé.");
+            console.log("💀 Mort du joueur - Reset du niveau");
+            
+            // Reset du timer à la mort
+            gameState.currentTime = 0;
             
             if (currentLevel.mobs) {
                 currentLevel.mobs.forEach(mob => {
@@ -170,7 +182,7 @@ function update(dt) {
             // A. Trouver le mob le plus proche
             let nearestMob = null;
             let minDistance = Infinity;
-            const MAX_AGGRO_RANGE = 600; // Distance max pour commencer à chasser
+            const MAX_AGGRO_RANGE = 600;
 
             currentLevel.mobs.forEach(mob => {
                 if (mob.isAlive) {
@@ -185,9 +197,7 @@ function update(dt) {
             // B. Mettre à jour les mobs
             currentLevel.mobs.forEach(mob => {
                 if (mob.update) {
-                    // Seul le mob le plus proche a le droit d'être agressif
                     const canAggro = (mob === nearestMob);
-                    
                     mob.update(dt, currentLevel.blocks, player, canAggro);
                 }
             });
@@ -216,7 +226,7 @@ function checkVictory() {
             player.y < zone.rect.y + zone.rect.height &&
             player.y + player.height > zone.rect.y) {
             
-            console.log("VICTOIRE ! Zone atteinte.");
+            console.log("🎉 VICTOIRE ! Zone atteinte.");
             gameState.isGameWon = true;
             player.vx = 0;
             player.vy = 0;
