@@ -52,10 +52,12 @@ export class Player {
         this.onGround = false;
 
         // === 1. MOUVEMENTS HORIZONTAUX ===
+        // IMPORTANT : Bloquer les mouvements pendant le Glide (comme en Java)
         if (this.forcedMovementFrames > 0) {
             this.x += this.forcedHorizontalVelocity;
             this.forcedMovementFrames--;
-        } else {
+        } else if (!this.gliding) {
+            // On peut bouger SEULEMENT si on ne glide pas
             if (input.left && !input.right) {
                 this.x -= GameConfig.MOVE_SPEED;
                 this.facingRight = false;
@@ -312,7 +314,6 @@ export class Player {
         this.jumping = false;
         this.forcedMovementFrames = 0;
         this.coyoteFrames = 0; // Reset du coyote time
-
         this.justDied = true;
     }
 }
